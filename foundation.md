@@ -179,4 +179,9 @@ client.createRoom(U"room#" + ToHex(RandomUint32()), RoomCreateOption().isVisible
 - `.getRoomList()` : `Array<RoomInfo>`でルームの情報一覧を取得する。`RoomInfo`型はロビーから所得可能なルームの情報をメンバ変数に持っています。名前以上の情報が欲しい場合はこちらを使用します。(`maxPlayers` : 最大人数, `playerCount` : 現在の人数...など)
 
 ### その他
-`.joinOrCreateRoom(RoomNameView roomName, const RoomCreateOption& option)` : 指定した名前のルームに参加を試み、無かった場合にルームの作成を試みます。
+- `.joinOrCreateRoom(RoomNameView roomName, const RoomCreateOption& option)` : 指定した名前のルームに参加を試み、無かった場合にルームの作成を試みます。
+
+- `.joinRandomRoom()` : 既存のルームの中からランダムに参加を試みる。
+
+- `joinRandomOrCreateRoom(RoomNameView roomName, const RoomCreateOption& roomCreateOption)` : ランダムなルームに参加を試み、参加できるルームが無かった場合にルームの作成を試みます。
+
