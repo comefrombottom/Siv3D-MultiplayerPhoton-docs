@@ -28,7 +28,7 @@ client.○○○()という操作に対して○○○Return()を返す。
 
 - `void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive);`
 
-    同じルームにいる他のプレイヤーが退室した際に通知する。`leaveRoomReturn()`はあくまで自身が`leaveRoom()`をしたときに返ってくるものなので、全くの別物。
+    同じルームにいる他のプレイヤーが退室した際に通知する。`leaveRoomReturn()`はあくまで自身が`.leaveRoom()`をしたときに返ってくるものなので、全くの別物。
 
 ## イベント受信
 - `void customEventAction(LocalPlayerID playerID, uint8 eventCode, Deserializer<MemoryViewReader>& reader);`
