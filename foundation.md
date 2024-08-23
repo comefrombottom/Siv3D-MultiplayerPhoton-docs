@@ -1,5 +1,4 @@
 # 基礎のプログラム
-まっさらな状態からコードを描いていきます。
 ## クライアントの作成
 クライアントとは、サーバーと通信を行うためのものです。マルチプレイヤー通信はすべてこのクライアントを介して行われます。
 ### インクルード
@@ -149,4 +148,35 @@ enum class ClientState {
 ```
 クライアントの状態は`.getClientState()`で取得できます。
 
+
+
+## ルームの作成・入室
 ロビーには、複数の部屋を作成することができ、またその中から部屋を選んで入室することが出来ます。マルチプレイヤー通信は同部屋の中にいるプレイヤー間でのみ行われ、ロビーで通信することはできません。
+
+- `.createRoom(RoomNameView roomName)` : ロビー内に部屋を作成し、入室する。※`RoomNameView`は`StringView`のエイリアス
+- `.joinRoom(RoomNameView roomName)` : ロビー内にすでにある部屋に対して入室する。
+- `.leaveRoom()` : 今いる部屋から退出する。
+
+
+
+### ルーム作成オプション
+
+ルーム作成オプションを表す型として`RoomCreateOption`が用意されています。
+- `isVisible()` : ロビーのルーム一覧に表示されるか。デフォルトで`true`
+- `isOpen()` : 他の人が入室できるか。デフォルトで`true`
+- `maxPlayers()` : ルームに入れる最大人数。0 を指定すると無制限になる。デフォルトで 0
+
+
+などのオプション指定するときに使用します。`.createRoom()`の第二引数に指定して使います。
+```cpp
+//ロビーから見えず、最大2人までの部屋を作成
+client.createRoom(U"room#" + ToHex(RandomUint32()), RoomCreateOption().isVisible(false).maxPlayers(2));
+```
+
+### ロビーから部屋の一覧を取得
+- `.getRoomNameList()` : `Array<RoomName>`でルームの名前一覧を取得する。※`RoomName`は`String`のエイリアス
+
+- `.getRoomList()` : `Array<RoomInfo>`でルームの情報一覧を取得する。`RoomInfo`型はロビーから所得可能なルームの情報をメンバ変数に持っています。名前以上の情報が欲しい場合はこちらを使用します。(`maxPlayers` : 最大人数, `playerCount` : 現在の人数...など)
+
+### その他
+`.joinOrCreateRoom(RoomNameView roomName, const RoomCreateOption& option)` : 指定した名前のルームに参加を試み、無かった場合にルームの作成を試みます。
