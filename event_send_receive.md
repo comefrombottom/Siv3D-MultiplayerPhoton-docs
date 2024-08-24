@@ -6,6 +6,8 @@
 
 `MultiplayerEvent`はイベントコードとイベント送信のオプションを持った型です。コンストラクタの第一引数でイベントコード、第二引数でターゲットを指定できます。デフォルトでは自分以外です。
 
+イベントコードは1から199までの整数を指定することが出来ます。
+
 いくつか例を上げます。
 
 - イベントコード 1 で、こんにちは。と送信
@@ -57,7 +59,7 @@ struct MyData
 
 `void customEventAction(LocalPlayerID playerID, uint8 eventCode, Deserializer<MemoryViewReader>& reader);`
 
-をオーバーライドすることで受取ることが出来る。
+をオーバーライドすることで受取ることが出来ます。
 
 例えば、先ほどの`sendEvent()`の例に全て対応するなら、
 
@@ -65,7 +67,9 @@ struct MyData
 class MyClient : public Multiplayer_Photon
 {
 public:
-	using Multiplayer_Photon::Multiplayer_Photon;
+	MyClient()
+		:Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)),U"1.0",Verbose::Yes)
+	{}
 private:
 
     //sendEventによって送られてきたイベントに反応し呼ばれる。
@@ -109,4 +113,160 @@ private:
     }
 }
 ```
-のようになる。
+のようになります。
+
+## RegisterEventCallback
+customEventAction()のオーバーロードによる受信は、全てのイベントが一つの関数を呼ぶため、customEventAction()が肥大化してしまう問題があります。そこで、独自のメンバ関数を登録し、イベントコードに応じて別の関数が呼ばれるようにできる仕組みが用意されています。
+
+引数に`LocalPlayerID`と送信した型を連ねたメンバ関数を独自定義し、`RegisterEventCallback`にイベントコードと関数ポインタを与え、コンストラクタなどではじめに登録しておきます。これにより、`RegisterEventCallback`によってイベントコードが登録されているイベントは、対応したメンバ関数を呼び出すようになります。登録されていないイベントコードのイベントが送られてきた場合は通常通り`customEventAction()`が反応します。
+
+`RegisterEventCallback`を用いて先ほどのイベント受信コードを書き換えると、
+
+```cpp
+class MyClient : public Multiplayer_Photon
+{
+public:
+	MyClient()
+		: Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::No)
+	{
+		RegisterEventCallback(1, &MyClient::eventReceived_1);
+		RegisterEventCallback(2, &MyClient::eventReceived_2);
+		RegisterEventCallback(3, &MyClient::eventReceived_3);
+		RegisterEventCallback(4, &MyClient::eventReceived_4);
+		RegisterEventCallback(5, &MyClient::eventReceived_5);
+	}
+
+private:
+
+	void eventReceived_1(LocalPlayerID playerID, const String& text) {
+		Print << U"イベントコード1を受信：" << getUserName(playerID) << U":" << text;
+	}
+
+	void eventReceived_2(LocalPlayerID playerID, const Vec2& v, int32 n, double d) {
+		Print << U"イベントコード2を受信：" << getUserName(playerID) << U":" << v << U"," << n << U"," << d;
+	}
+
+	void eventReceived_3(LocalPlayerID playerID, double d) {
+		Print << U"イベントコード3を受信：" << getUserName(playerID) << U":" << d;
+	}
+
+	void eventReceived_4(LocalPlayerID playerID, const Circle& circle, const RectF& rect) {
+		Print << U"イベントコード4を受信：" << getUserName(playerID) << U":" << circle << U"," << rect;
+	}
+
+	void eventReceived_5(LocalPlayerID playerID) {
+		Print << U"イベントコード5を受信：" << getUserName(playerID);
+	}
+};
+```
+
+となります。
+
+
+??? summary "実際に動かせるサンプル"
+    ```cpp
+    # include <Siv3D.hpp> // Siv3D v0.6.15
+    # include "Multiplayer_Photon.hpp"
+    # include "PHOTON_APP_ID.SECRET"
+
+
+    class MyClient : public Multiplayer_Photon
+    {
+    public:
+        MyClient()
+            : Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::No)
+        {
+            RegisterEventCallback(1, &MyClient::eventReceived_1);
+            RegisterEventCallback(2, &MyClient::eventReceived_2);
+            RegisterEventCallback(3, &MyClient::eventReceived_3);
+            RegisterEventCallback(4, &MyClient::eventReceived_4);
+            RegisterEventCallback(5, &MyClient::eventReceived_5);
+        }
+
+    private:
+
+        void eventReceived_1(LocalPlayerID playerID, const String& text) {
+            Print << U"イベントコード1を受信：" << getUserName(playerID) << U":" << text;
+        }
+
+        void eventReceived_2(LocalPlayerID playerID, const Vec2& v, int32 n, double d) {
+            Print << U"イベントコード2を受信：" << getUserName(playerID) << U":" << v << U"," << n << U"," << d;
+        }
+
+        void eventReceived_3(LocalPlayerID playerID, double d) {
+            Print << U"イベントコード3を受信：" << getUserName(playerID) << U":" << d;
+        }
+
+        void eventReceived_4(LocalPlayerID playerID, const Circle& circle, const RectF& rect) {
+            Print << U"イベントコード4を受信：" << getUserName(playerID) << U":" << circle << U"," << rect;
+        }
+
+        void eventReceived_5(LocalPlayerID playerID) {
+            Print << U"イベントコード5を受信：" << getUserName(playerID);
+        }
+    };
+
+    void Main()
+    {
+        Window::Resize(1280, 720);
+
+        MyClient client;
+
+        while (System::Update())
+        {
+            if (client.isActive())
+            {
+                client.update();
+            }
+            else {
+                client.connect(U"player", U"jp");
+            }
+
+            if (client.isInLobby())
+            {
+                client.joinRandomOrCreateRoom(U"room");
+            }
+
+            if (client.isInRoom())
+            {
+                Scene::Rect().draw(Palette::Sienna);
+            }
+
+
+            //コントロールパネル
+
+            double y = 0;
+
+            if(SimpleGUI::Button(U"sendEvent 1", Vec2{ 1000, (y += 40) }, 160))
+            {
+                client.sendEvent(MultiplayerEvent(1), String(U"こんにちは。"));
+            }
+
+            if (SimpleGUI::Button(U"sendEvent 2", Vec2{ 1000, (y += 40) }, 160))
+            {
+                client.sendEvent(MultiplayerEvent(2), Cursor::PosF(), 12, 3.4);
+            }
+
+            if (SimpleGUI::Button(U"sendEvent 3", Vec2{ 1000, (y += 40) }, 160))
+            {
+                client.sendEvent(MultiplayerEvent(3, EventReceiverOption::All), 3.14);
+            }
+
+            if (SimpleGUI::Button(U"sendEvent 4", Vec2{ 1000, (y += 40) }, 160))
+            {
+                client.sendEvent(MultiplayerEvent(4, Array<LocalPlayerID>{2, 3}), Circle(10, 10, 10), RectF(10, 10, 20, 30));
+            }
+
+            if (SimpleGUI::Button(U"sendEvent 5", Vec2{ 1000, (y += 40) }, 160))
+            {
+                client.sendEvent(MultiplayerEvent(5));
+            }
+
+            if (SimpleGUI::Button(U"ClearPrint()", Vec2{ 1000, (y += 40) }, 160))
+            {
+                ClearPrint();
+            }
+            
+        }
+    }
+    ```
