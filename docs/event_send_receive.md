@@ -118,9 +118,9 @@ private:
 ## RegisterEventCallback
 customEventAction()のオーバーロードによる受信は、全てのイベントが一つの関数を呼ぶため、customEventAction()が肥大化してしまう問題があります。そこで、独自のメンバ関数を登録し、イベントコードに応じて別の関数が呼ばれるようにできる仕組みが用意されています。
 
-引数に`LocalPlayerID`と送信した型を連ねたメンバ関数を独自定義し、`RegisterEventCallback`にイベントコードと関数ポインタを与え、コンストラクタなどではじめに登録しておきます。これにより、`RegisterEventCallback`によってイベントコードが登録されているイベントは、対応したメンバ関数を呼び出すようになります。登録されていないイベントコードのイベントが送られてきた場合は通常通り`customEventAction()`が反応します。
+引数に`LocalPlayerID`と送信した型を連ねたメンバ関数を独自定義し、`RegisterEventCallback()`にイベントコードと関数ポインタを与え、コンストラクタなどではじめに登録しておきます。これにより、`RegisterEventCallback()`によってイベントコードが登録されているイベントは、対応したメンバ関数を呼び出すようになります。登録されていないイベントコードのイベントが送られてきた場合は通常通り`customEventAction()`が反応します。
 
-`RegisterEventCallback`を用いて先ほどのイベント受信コードを書き換えると、
+`RegisterEventCallback()`を用いて先ほどのイベント受信コードを書き換えると、
 
 ```cpp
 class MyClient : public Multiplayer_Photon
