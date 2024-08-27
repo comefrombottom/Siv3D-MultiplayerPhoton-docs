@@ -157,6 +157,7 @@ enum class ClientState {
 - `.joinRoom(RoomNameView roomName)` : ロビー内にすでにある部屋に対して入室する。
 - `.leaveRoom()` : 今いる部屋から退出する。
 
+`roomName`はRoomIDとして機能し、同じ名前のルームを複数作ることはできません。また、日本語の文字などを入れてはいけません。英数字と記号のみで構成してください。
 
 
 ### ルーム作成オプション
