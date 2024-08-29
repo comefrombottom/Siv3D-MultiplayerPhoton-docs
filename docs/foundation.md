@@ -5,15 +5,15 @@
 <Siv3D.hpp> に続いて、"Multiplayer_Photon.hpp" と "PHOTON_APP_ID.SECRET" をインクルードします。
 
 ### Multiplayer_Photon の継承
-Multiplayer_Photon を継承したクラス MyClient（名前は任意）を作成し、using Multiplayer_Photon::Multiplayer_Photon; で Multiplayer_Photon のコンストラクタも継承します。
+`Multiplayer_Photon` を継承したクラス `MyClient`（名前は任意）を作成し、`using Multiplayer_Photon::Multiplayer_Photon;` で `Multiplayer_Photon` のコンストラクタも継承します。
 
 ### Photon App ID の格納
-const std::string secretAppID{ SIV3D_OBFUSCATE(PHOTON_APP_ID) }; とすることで、実行時に Photon App ID が secretAppID に格納されます。直接 const std::string secretAppID{ PHOTON_APP_ID }; とすると、ビルドした実行ファイルのバイナリを解析した際に、Photon App ID がそのまま表れてしまいますが、SIV3D_OBFUSCATE() で包むことで、多少の難読化が施されます。
+`const std::string secretAppID{ SIV3D_OBFUSCATE(PHOTON_APP_ID) };` とすることで、実行時に Photon App ID が `secretAppID` に格納されます。直接 `const std::string secretAppID{ PHOTON_APP_ID };` とすると、ビルドした実行ファイルのバイナリを解析した際に、Photon App ID がそのまま表れてしまいますが、`SIV3D_OBFUSCATE()` で包むことで、多少の難読化が施されます。
 
 ### MyClient の作成
 MyClient オブジェクトを作成します。コンストラクタには Photon App ID, アプリケーションのバージョン、詳細なデバッグ表示の有無、の 3 つのパラメータを渡します。
 Photon App ID が同じでも、アプリケーションのバージョンが異なるプログラムとは通信ができません。ゲームのバージョンアップ後に、新旧のバージョン同士で通信してしまうことを防ぐことができます。
-詳細なデバッグ表示を有効 (Verbose::Yes) にすると、Multiplayer_Photon クラスの protected メンバ変数 m_verbose が true になり、Multiplayer_Photon の各種コールバック関数が呼ばれた際に、詳細な情報を Print 経由で出力するようになります。開発中は有効にしておくとデバッグに便利です。リリース時には Verbose::No を選択すると、一切 Print しなくなります。
+詳細なデバッグ表示を有効 (`Verbose::Yes`) にすると、Multiplayer_Photon の各種コールバック関数が呼ばれた際に、詳細な情報を Print 経由で出力するようになります。開発中は有効にしておくとデバッグに便利です。リリース時には Verbose::No を選択すると、一切 Print しなくなります。
 ```cpp
 # include <Siv3D.hpp> // Siv3D v0.6.15
 # include "Multiplayer_Photon.hpp"
@@ -76,18 +76,30 @@ void Main()
 	}
 }
 ```
+### デバッグ出力先を変更
+`Multiplayer_Photon`のコンストラクタの第3引数に`Verbose`の代わりに`Console`などの文字列を受取る関数、関数オブジェクトを与えると、デバッグ出力の出力先を変更することができます。(デフォルトでは`Print`)　この場合、第4引数で`Verbose`を指定できます。
+```cpp
+class MyClient : public Multiplayer_Photon
+{
+public:
+	//デバッグ情報をConsole出力
+	MyClient()
+		:Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)),U"1.0",Console)
+	{}
+};
+```
 
 ## 接続・維持・切断
 
 ### サーバーに接続する
-MyClient の `.connect()` でサーバーに接続します。引数として自身の名前（ユーザ名）を設定します。このあと、ユーザ名にランダムな数字をつなげた文字列がユーザ ID として自動的に割り当てられます。第二引数に`U"jp"`などのリージョンを渡すことでサーバーを指定できます。ない場合は利用可能なもののうち最も速いものが選ばれます。
+`MyClient` の `.connect()` でサーバーに接続します。引数として自身の名前（ユーザ名）を設定します。このあと、ユーザ名にランダムな数字をつなげた文字列がユーザ ID として自動的に割り当てられます。第二引数に`U"jp"`などのリージョンを渡すことでサーバーを指定できます。ない場合は利用可能なもののうち最も速いものが選ばれます。
 
 ### サーバーと同期する
-`.connect()` すると `.isActive()` が `true` を返すようになります。この間は 60FPS の頻度で `.update()` を呼び、サーバと同期をとり続ける必要があります。.update() が数秒以上呼ばれないと、サーバから切断される場合があります。サーバと接続していない時に `.update()` を呼んでも何も起こりません。
+`.connect()` すると `.isActive()` が `true` を返すようになります。この間は 60FPS の頻度で `.update()` を呼び、サーバと同期をとり続ける必要があります。`.update()` が数秒以上呼ばれないと、サーバから切断される場合があります。サーバと接続していない時に `.update()` を呼んでも何も起こりません。
 この先のチュートリアルで登場する「～すると呼ばれる関数」は、基本的に `.update()` のタイミングで呼ばれます。
 
 ### サーバから切断する
-MyNetwork のデストラクタで自動的にサーバから切断するため、明示的な `.disconnect()` は不要です。
+`MyClient` のデストラクタで自動的にサーバから切断するため、明示的な `.disconnect()` は不要です。
 
 ```cpp
 # include <Siv3D.hpp> // OpenSiv3D v0.6.15
