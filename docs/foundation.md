@@ -166,7 +166,7 @@ enum class ClientState {
 - `isVisible()` : ロビーのルーム一覧に表示されるか。デフォルトで`true`
 - `isOpen()` : 他の人が入室できるか。デフォルトで`true`
 - `maxPlayers()` : ルームに入れる最大人数。0 を指定すると無制限になる。デフォルトで 0
-
+- `roomDestroyGracePeriod()` : ルームに誰もいなくなってからルームが破棄されるまでの猶予時間。最大5分(300000ms)
 
 などのオプション指定するときに使用します。`.createRoom()`の第二引数に指定して使います。
 ```cpp
