@@ -6,13 +6,13 @@ Siv3D for Web上で、Multiplayer_Photonを用いてオンラインマルチプ�
 
 ## 準備 1 | Photon SDK のダウンロード
 
-[Photon Realtime SDK:material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-javascript-sdkrealtimejavascript)の JavaScript 版（zip形式で圧縮）をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v4.2.0.0` です。
+[Photon Realtime SDK :material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-javascript-sdkrealtimejavascript){:target="_blank"}の JavaScript 版（zip形式で圧縮）をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v4.2.0.0` です。
 
 ダウンロードした zip 形式のファイルを展開し、適当な場所に配置します。
 
 ## 準備2 | プロジェクトの準備
 
-1. Siv3D for Webのプロジェクトを作成します。詳しい手順は[OpenSiv3D for Web:material-open-in-new:](https://siv3d.github.io/ja-jp/download/web/)を参照してください。
+1. Siv3D for Webのプロジェクトを作成します。詳しい手順は[OpenSiv3D for Web :material-open-in-new:](https://siv3d.github.io/ja-jp/download/web/){:target="_blank"}を参照してください。
 
 2. Siv3D SDK フォルダ内の `addon/Multiplayer_Photon` フォルダから 4 つのファイル `Multiplayer_Photon.hpp`, `Multiplayer_Photon.cpp`, `Multiplayer_Photon.js`, `PHOTON_APP_ID.SECRET` をコピーして、プロジェクトの Main.cpp があるフォルダに配置します。
 
