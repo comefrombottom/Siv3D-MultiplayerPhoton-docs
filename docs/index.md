@@ -19,15 +19,16 @@ SDKをダウンロードの横のリンクをクリック。
 1. 通常どおり Siv3D アプリケーションプロジェクト (v0.6.15) を作成します。
 2. Siv3D SDK フォルダ内の `addon/Multiplayer_Photon` フォルダから 3 つのファイル `Multiplayer_Photon.hpp`, `Multiplayer_Photon.cpp`, `PHOTON_APP_ID.SECRET` をコピーして、プロジェクトの Main.cpp があるフォルダに配置します。
 
-![alt text](image-2.png)
+    ![alt text](image-2.png)
 
-![alt text](image-5.png)
-??? info "Siv3D SDK"
-    Siv3D をインストールしたときに作成されるフォルダです。macOS の場合それ自体、Windows の場合はデフォルトでドキュメントフォルダに OpenSiv3D_0.6.* という名前で作成されます
+    ![alt text](image-5.png)
+    ??? info "Siv3D SDK"
+        Siv3D をインストールしたときに作成されるフォルダです。macOS の場合それ自体、Windows の場合はデフォルトでドキュメントフォルダに OpenSiv3D_0.6.* という名前で作成されます
+        
 3. Multiplayer_Photon ライブラリを自分のプロジェクトで使うために、コピーした `Multiplayer_Photon.hpp` と `Multiplayer_Photon.cpp` をプロジェクトに追加し、ビルド対象に含むようにします（ただし、このままでは Photon SDK へのインクルード・ライブラリパスが通っていないため、ビルドには失敗します）
 
-Visual Studio の場合の参考動画
-<video controls src="20240822-1303-37.8676551.mp4" title="Title"></video>
+    Visual Studio の場合の参考動画
+    <video controls src="20240822-1303-37.8676551.mp4" title="Title"></video>
 
 
 4. (Windows の場合) プロジェクトの設定で、インクルードディレクトリとライブラリディレクトリそれぞれに、ダウンロードした Photon SDK フォルダのパス (例: C:/Users/siv3d/Desktop/libs/Photon-Windows-Sdk_v5-0-3-0) を追加します

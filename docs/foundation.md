@@ -2,7 +2,7 @@
 ## クライアントの作成
 クライアントとは、サーバーと通信を行うためのものです。マルチプレイヤー通信はすべてこのクライアントを介して行われます。
 ### インクルード
-<Siv3D.hpp> に続いて、"Multiplayer_Photon.hpp" と "PHOTON_APP_ID.SECRET" をインクルードします。
+`<Siv3D.hpp>` に続いて、"Multiplayer_Photon.hpp" と "PHOTON_APP_ID.SECRET" をインクルードします。
 
 ### Multiplayer_Photon の継承
 `Multiplayer_Photon` を継承したクラス `MyClient`（名前は任意）を作成し、`using Multiplayer_Photon::Multiplayer_Photon;` で `Multiplayer_Photon` のコンストラクタも継承します。
@@ -96,7 +96,7 @@ public:
 
 ### サーバーと同期する
 `.connect()` すると `.isActive()` が `true` を返すようになります。この間は 60FPS の頻度で `.update()` を呼び、サーバと同期をとり続ける必要があります。`.update()` が数秒以上呼ばれないと、サーバから切断される場合があります。サーバと接続していない時に `.update()` を呼んでも何も起こりません。
-この先のチュートリアルで登場する「～すると呼ばれる関数」は、基本的に `.update()` のタイミングで呼ばれます。
+この先のチュートリアルで登場する「コールバック関数」は、基本的に `.update()` のタイミングで呼ばれます。
 
 ### サーバから切断する
 `MyClient` のデストラクタで自動的にサーバから切断するため、明示的な `.disconnect()` は不要です。

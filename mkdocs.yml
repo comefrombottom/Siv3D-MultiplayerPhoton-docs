@@ -75,4 +75,10 @@ nav:
   - 基礎のプログラム: foundation.md
   - コールバック: call_back.md
   - イベント送受信: event_send_receive.md
+  - イベント送受信によるデータの同期: synchronizing_data.md
+  - 部屋への再入室: reconnectAndRejoin.md
+  - ルームプロパティ: property.md
+  - イベントキャッシュ: event_cache.md
+  - イベントターゲットグループ: targetGroup.md
+  - ランダムマッチング: random_matching.md
     

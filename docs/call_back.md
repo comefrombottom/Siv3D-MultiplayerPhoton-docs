@@ -1,6 +1,8 @@
 # コールバックを編集する
 サーバーに接続、部屋に入室、部屋から退出など、あらゆる操作やイベントの結果を通知するために呼ばれる関数をコールバック関数といいます。Multiplayer_Photon関数を継承した自作クラス`MyClient`のなかでこれらのコールバック関数をオーバーライドすることで、コールバックを編集することが出来ます。
 
+コールバック関数は、`.update()` のタイミングで呼ばれます。
+
 ## 操作に対して返すコールバック
 client.○○○()という操作に対して○○○Return()を返す。
 
@@ -24,11 +26,15 @@ client.○○○()という操作に対して○○○Return()を返す。
 
 - `void joinRoomEventAction(const LocalPlayer& newPlayer, const Array<LocalPlayerID>& playerIDs, bool isSelf);`
 
-    自身がルームに入室したり、部屋に他のプレイヤーが入ってきた際に通知する。`joinRoomReturn()`と紛らわしいが、`joinRoomReturn()`はあくまで自分が`.joinRoom()`を行った時のみ返ってくる。
+    自身がルームに入室したり、部屋に他のプレイヤーが入ってきた際に通知する。入ってきた人を含めた、部屋にいる人全員に通知される。
+    
+    `joinRoomReturn()`と紛らわしいが、`joinRoomReturn()`はあくまで自分が`.joinRoom()`を行った時のみ自分に対して返ってくる。
 
 - `void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive);`
 
-    同じルームにいる他のプレイヤーが退室した際に通知する。`leaveRoomReturn()`はあくまで自身が`.leaveRoom()`をしたときに返ってくるものなので、全くの別物。
+    同じルームにいた他のプレイヤーが退室した際に通知する。部屋にいる人全員に通知される。抜けた人は受け取らない。
+
+    `leaveRoomReturn()`はあくまで自身が`.leaveRoom()`をしたときに自分に対して返ってくるもの。
 
 ## イベント受信
 - `void customEventAction(LocalPlayerID playerID, uint8 eventCode, Deserializer<MemoryViewReader>& reader);`
@@ -37,16 +43,16 @@ client.○○○()という操作に対して○○○Return()を返す。
 - `void connectionErrorReturn(int32 errorCode);`
 
     意図的でなく切断が切れた際に通知する。
+
 - `void onRoomListUpdate();`
 
     ロビーから取得できるルームリストが更新された際に通知する。
+
 - `void onHostChange(LocalPlayerID newHostPlayerID, LocalPlayerID oldHostPlayerID);`
 
     部屋のホストが変わった際に通知する。
+
 - `void onRoomPropertiesChange(const HashTable<String, String>& changes);`
-
-- `void onPlayerPropertiesChange(LocalPlayerID playerID, const HashTable<String, String>& changes);`
-
 
 
 ## サンプルコード
