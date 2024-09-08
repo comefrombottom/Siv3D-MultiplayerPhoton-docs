@@ -71,6 +71,7 @@ extra:
 # Page tree
 nav:
   - Siv3D でオンラインゲームをつくろう: index.md
+  - Siv3D for Web でオンラインゲームをつくろう: web.md
   - 動かしてみよう: verify_the_connection.md
   - 基礎のプログラム: foundation.md
   - コールバック: call_back.md
