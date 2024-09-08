@@ -1,6 +1,8 @@
 # Siv3Dでオンラインマルチプレイヤーゲームを作ろう！
 Siv3Dのアドオンとして提供されている、Multiplayer_Photonを用いてオンラインマルチプレイヤーゲームを作るチュートリアルです。
 
+Siv3D for Webを用いる場合には[Siv3D for Webでオンラインマルチプレイヤーゲームを作ろう！](web.md)を参照してください。
+
 ## 準備 1 | Photon SDK のダウンロード
 
 開発環境に応じた [Photon Realtime SDK :material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-cpp) (7z 形式で圧縮) をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v5.0.11.0` です。
