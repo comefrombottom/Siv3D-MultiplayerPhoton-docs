@@ -1,5 +1,6 @@
 # イベントキャッシュ
 送信したイベントは通常その時参加しているプレイヤーのみ受信します。イベントキャッシュを使用すると、送信したあとに遅れて参加したプレイヤーも受信できるようになります。イベントキャッシュをするには、`MultiplayerEvent`の第二引数に、
+
 - `EventReceiverOption::Others_CacheUntilLeaveRoom`
 - `EventReceiverOption::Others_CacheForever`
 - `EventReceiverOption::All_CacheUntilLeaveRoom`
