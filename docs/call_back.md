@@ -1,5 +1,5 @@
 # コールバックを編集する
-サーバーに接続、部屋に入室、部屋から退出など、あらゆる操作やイベントの結果を通知するために呼ばれる関数をコールバック関数といいます。Multiplayer_Photon関数を継承した自作クラス`MyClient`のなかでこれらのコールバック関数をオーバーライドすることで、コールバックを編集することが出来ます。
+サーバーに接続、部屋に入室、部屋から退出など、あらゆる操作やイベントの結果を通知するために呼ばれる関数をコールバック関数といいます。`Multiplayer_Photon`クラスを継承した自作クラス`MyClient`のなかでこれらのコールバック関数をオーバーライドすることで、コールバックを編集することが出来ます。
 
 コールバック関数は、`.update()` のタイミングで呼ばれます。
 
@@ -52,7 +52,7 @@ client.○○○()という操作に対して○○○Return()を返す。
 
     部屋のホストが変わった際に通知する。
 
-- `void onRoomPropertiesChange(const HashTable<String, String>& changes);`
+- `void onRoomPropertiesChange(const HashTable<uint8, String>& changes);`
 
 
 ## サンプルコード

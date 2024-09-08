@@ -3,7 +3,7 @@ Siv3Dのアドオンとして提供されている、Multiplayer_Photonを用い
 
 ## 準備 1 | Photon SDK のダウンロード
 
-開発環境に応じた [Photon Realtime SDK:material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-cpp) (7z 形式で圧縮) をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v5.0.11.0` です。
+開発環境に応じた [Photon Realtime SDK :material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-cpp) (7z 形式で圧縮) をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v5.0.11.0` です。
 
 ![alt text](image.png)
 WindownsならREALTIME Windowsを選択。
@@ -13,7 +13,7 @@ SDKをダウンロードの横のリンクをクリック。
 
 ダウンロードした7z 形式のファイルを展開し、適当な場所に配置します（これ以降の手順でプロジェクトのインクルード / ライブラリパスをこのフォルダパスに対して設定するため、これ以降は移動させないでください。）
 
-[7zip解凍環境がない方はこちらのソフトをダウンロード:material-open-in-new:](https://www.7-zip.org/)
+[7zip解凍環境がない方はこちらのソフトをダウンロード :material-open-in-new:](https://www.7-zip.org/)
 
 ## 準備2 | プロジェクトの準備
 1. 通常どおり Siv3D アプリケーションプロジェクト (v0.6.15) を作成します。
@@ -24,7 +24,7 @@ SDKをダウンロードの横のリンクをクリック。
     ![alt text](image-5.png)
     ??? info "Siv3D SDK"
         Siv3D をインストールしたときに作成されるフォルダです。macOS の場合それ自体、Windows の場合はデフォルトでドキュメントフォルダに OpenSiv3D_0.6.* という名前で作成されます
-        
+
 3. Multiplayer_Photon ライブラリを自分のプロジェクトで使うために、コピーした `Multiplayer_Photon.hpp` と `Multiplayer_Photon.cpp` をプロジェクトに追加し、ビルド対象に含むようにします（ただし、このままでは Photon SDK へのインクルード・ライブラリパスが通っていないため、ビルドには失敗します）
 
     Visual Studio の場合の参考動画

@@ -175,6 +175,7 @@ enum class ClientState {
 ### ルーム作成オプション
 
 ルーム作成オプションを表す型として`RoomCreateOption`が用意されています。
+
 - `isVisible()` : ロビーのルーム一覧に表示されるか。デフォルトで`true`
 - `isOpen()` : 他の人が入室できるか。デフォルトで`true`
 - `maxPlayers()` : ルームに入れる最大人数。0 を指定すると無制限になる。デフォルトで 0
@@ -194,7 +195,7 @@ client.createRoom(U"room#" + ToHex(RandomUint32()), RoomCreateOption().isVisible
 ### その他
 - `.joinOrCreateRoom(RoomNameView roomName, const RoomCreateOption& option)` : 指定した名前のルームに参加を試み、無かった場合にルームの作成を試みます。
 
-- `.joinRandomRoom()` : 既存のルームの中からランダムに参加を試みる。
+- `.joinRandomRoom()` : 既存のルームの中からランダムに参加を試みます。
 
 - `joinRandomOrCreateRoom(RoomNameView roomName, const RoomCreateOption& roomCreateOption)` : ランダムなルームに参加を試み、参加できるルームが無かった場合にルームの作成を試みます。
 
