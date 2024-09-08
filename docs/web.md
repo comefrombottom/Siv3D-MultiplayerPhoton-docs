@@ -8,25 +8,24 @@ Siv3D for Web上で、Multiplayer_Photonを用いてオンラインマルチプ�
 
 [Photon Realtime SDK :material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-javascript-sdkrealtimejavascript){:target="_blank"}の JavaScript 版（zip形式で圧縮）をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v4.2.0.0` です。
 
-ダウンロードした zip 形式のファイルを展開し、適当な場所に配置します。
 
 ## 準備2 | プロジェクトの準備
 
 1. Siv3D for Webのプロジェクトを作成します。詳しい手順は[OpenSiv3D for Web :material-open-in-new:](https://siv3d.github.io/ja-jp/download/web/){:target="_blank"}を参照してください。
 
-2. Siv3D SDK フォルダ内の `addon/Multiplayer_Photon` フォルダから 4 つのファイル `Multiplayer_Photon.hpp`, `Multiplayer_Photon.cpp`, `Multiplayer_Photon.js`, `PHOTON_APP_ID.SECRET` をコピーして、プロジェクトの Main.cpp があるフォルダに配置します。
+2. Siv3D SDK フォルダ内の `addon/Multiplayer_Photon` フォルダから 4 つのファイル `Multiplayer_Photon.hpp`, `Multiplayer_Photon.cpp`, `Multiplayer_Photon.js`, `PHOTON_APP_ID.SECRET` をコピーして、プロジェクトの Main.cpp があるフォルダに配置します。また、ダウンロードした zip 形式のファイルを展開し、`lib`フォルダ内の`photon.js`ファイルも同様に Main.cpp があるフォルダに配置します。
 
-3. `Multiplayer_Photon.cpp`をビルド対象に含むように設定し、リンカオプションに`--js-library MultiplayerPhoton.js`, `-pre-js ???/lib/photon.js`を指定します（??? は Photon SDK フォルダのパス）。
+3. `Multiplayer_Photon.cpp`をビルド対象に含むように設定し、リンカオプションを設定します。
 
-    ??? "Visual Studio の場合"
-        プロジェクトのプロパティを開き、`Emscripten リンカ/入力`のページ内に移動し、Pre-Add Javascript Fileに`???/lib/photon.js`を追加し、追加の JavaScript ライブラリに`$(ProjectDir)/MultiplayerPhoton.js`を追加します。
+    !!! info "Visual Studio の場合"
+        プロジェクトのプロパティを開き、`Emscriptenリンカ / 入力`のページ内に移動し、`Pre-Add Javascript File`に`???/lib/photon.js`を追加し、追加の JavaScript ライブラリに`$(ProjectDir)/MultiplayerPhoton.js`を追加します。
 
-    ??? "Visual Studio Code の場合"
+    !!! info "Visual Studio Code の場合"
         `Link.rsp`ファイルに`--js-library MultiplayerPhoton.js` `--pre-js ???/lib/photon.js`を追加します。
 
 4. これでビルドができればプロジェクトの準備は完了です
 
-??? 起動時にエラーが出る場合
+??? info "起動時にエラーが出る場合"
     起動直後に上部のステータスバーが赤色に変化し、ブラウザのコンソールに以下のようなエラーが表示されることがあります。
     Emscriptenのリンカオプションに`-s ASYNCIFY_STACK_SIZE=24576`のように設定し、スタックサイズを増加させると解決する場合があります。
     ```
