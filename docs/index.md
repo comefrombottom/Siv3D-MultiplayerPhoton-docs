@@ -5,7 +5,7 @@ Siv3D for Webを用いる場合には[Siv3D for Webでオンラインマルチ�
 
 ## 準備 1 | Photon SDK のダウンロード
 
-開発環境に応じた [Photon Realtime SDK :material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-cpp) (7z 形式で圧縮) をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v5.0.11.0` です。
+開発環境に応じた [Photon Realtime SDK :material-open-in-new:](https://www.photonengine.com/ja-jp/sdks#realtime-cpp){:target="_blank"}（7z 形式で圧縮）をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは `v5.0.11.0` です。
 
 ![alt text](image.png)
 WindownsならREALTIME Windowsを選択。
@@ -15,7 +15,7 @@ SDKをダウンロードの横のリンクをクリック。
 
 ダウンロードした7z 形式のファイルを展開し、適当な場所に配置します（これ以降の手順でプロジェクトのインクルード / ライブラリパスをこのフォルダパスに対して設定するため、これ以降は移動させないでください。）
 
-[7zip解凍環境がない方はこちらのソフトをダウンロード :material-open-in-new:](https://www.7-zip.org/)
+[7zip解凍環境がない方はこちらのソフトをダウンロード :material-open-in-new:](https://www.7-zip.org/){:target="_blank"}
 
 ## 準備2 | プロジェクトの準備
 1. 通常どおり Siv3D アプリケーションプロジェクト (v0.6.15) を作成します。

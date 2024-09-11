@@ -12,11 +12,13 @@
         <meta name="author" content="Ryo Suzuki">
       
       
-        <link rel="canonical" href="https://siv3d.github.io/ja-jp/random_matching/">
+        <link rel="canonical" href="https://siv3d.github.io/ja-jp/web/">
       
       
-        <link rel="prev" href="../targetGroup/">
+        <link rel="prev" href="..">
       
+      
+        <link rel="next" href="../verify_the_connection/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -24,7 +26,7 @@
     
     
       
-        <title>ランダムマッチング - Siv3D_Multiplayer_Photon</title>
+        <title>Siv3D for Web でオンラインゲームをつくろう - Siv3D_Multiplayer_Photon</title>
       
     
     
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ランダムマッチング" class="md-skip">
+        <a href="#siv3d-for-webでオンラインマルチプレイヤーゲームを作ろう" class="md-skip">
           コンテンツにスキップ
         </a>
       
@@ -113,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ランダムマッチング
+              Siv3D for Web でオンラインゲームをつくろう
             
           </span>
         </div>
@@ -274,10 +276,30 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../web/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Siv3D for Web でオンラインゲームをつくろう
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -286,6 +308,53 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目次">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目次
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#準備-1--photon-sdk-のダウンロード" class="md-nav__link">
+    <span class="md-ellipsis">
+      準備 1 | Photon SDK のダウンロード
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#準備2--プロジェクトの準備" class="md-nav__link">
+    <span class="md-ellipsis">
+      準備2 | プロジェクトの準備
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#準備3--photon-app-id-を取得しプロジェクトに設定する" class="md-nav__link">
+    <span class="md-ellipsis">
+      準備3 | Photon App ID を取得し、プロジェクトに設定する
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -474,30 +543,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    ランダムマッチング
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../random_matching/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -506,44 +555,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="目次">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      目次
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#フィルター" class="md-nav__link">
-    <span class="md-ellipsis">
-      フィルター
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#matchmakingmode" class="md-nav__link">
-    <span class="md-ellipsis">
-      MatchmakingMode
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -575,18 +586,27 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#フィルター" class="md-nav__link">
+  <a href="#準備-1--photon-sdk-のダウンロード" class="md-nav__link">
     <span class="md-ellipsis">
-      フィルター
+      準備 1 | Photon SDK のダウンロード
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#matchmakingmode" class="md-nav__link">
+  <a href="#準備2--プロジェクトの準備" class="md-nav__link">
     <span class="md-ellipsis">
-      MatchmakingMode
+      準備2 | プロジェクトの準備
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#準備3--photon-app-id-を取得しプロジェクトに設定する" class="md-nav__link">
+    <span class="md-ellipsis">
+      準備3 | Photon App ID を取得し、プロジェクトに設定する
     </span>
   </a>
   
@@ -610,27 +630,64 @@
   
 
 
-<h1 id="ランダムマッチング">ランダムマッチング<a class="headerlink" href="#ランダムマッチング" title="Permanent link">&para;</a></h1>
-<p><code>joinRandomRoom()</code>及び<code>joinRandomOrCreateRoom()</code>では基本的なランダムマッチングをすることが出来ます。これらの関数は引数に<code>propertyFilter</code>、<code>expectedMaxPlayers</code>、<code>matchmakingMode</code>を取ります。</p>
-<h2 id="フィルター">フィルター<a class="headerlink" href="#フィルター" title="Permanent link">&para;</a></h2>
-<p><code>propertyFilter</code>と<code>expectedMaxPlayers</code>はランダムマッチング時のフィルターとして機能します。</p>
-<p>ルームの公開されたルームプロパティを参照し、<code>propertyFilter</code>で与えた<code>{key,value}</code>が全て一致するルームをランダムマッチングの対象とします。<code>propertyFilter</code>が公開されたルームプロパティを網羅している必要はありません。</p>
-<p><code>expectedMaxPlayers</code>はルームに設定された<code>maxPlayers</code>を参照し、一致するもののみを対象とします。0が設定された場合は無視されます。</p>
-<h2 id="matchmakingmode">MatchmakingMode<a class="headerlink" href="#matchmakingmode" title="Permanent link">&para;</a></h2>
-<p><code>MatchmakingMode</code>は以下で与えられる列挙型で、デフォルトは<code>MatchmakingMode::FillOldestRoom</code>です。
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">/// @brief ランダム入室時のマッチメイキングモード</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MatchmakingMode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">uint8</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">{</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">	</span><span class="c1">/// @brief 古いルームからうめていくように入室</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">	</span><span class="n">FillOldestRoom</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">	</span><span class="c1">/// @brief 順次均等に配分するように入室</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">	</span><span class="n">Serial</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">	</span><span class="c1">/// @brief ランダムに入室</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">	</span><span class="n">Random</span><span class="p">,</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">};</span>
+<h1 id="siv3d-for-webでオンラインマルチプレイヤーゲームを作ろう">Siv3D for Webでオンラインマルチプレイヤーゲームを作ろう！<a class="headerlink" href="#siv3d-for-webでオンラインマルチプレイヤーゲームを作ろう" title="Permanent link">&para;</a></h1>
+<p>Siv3D for Web上で、Multiplayer_Photonを用いてオンラインマルチプレイヤーゲームを作るチュートリアルです。</p>
+<p>通常の手順は<a href="../">Siv3Dでオンラインマルチプレイヤーゲームを作ろう！</a>を参照してください。</p>
+<h2 id="準備-1--photon-sdk-のダウンロード">準備 1 | Photon SDK のダウンロード<a class="headerlink" href="#準備-1--photon-sdk-のダウンロード" title="Permanent link">&para;</a></h2>
+<p><a href="https://www.photonengine.com/ja-jp/sdks#realtime-javascript-sdkrealtimejavascript" target="_blank">Photon Realtime SDK<span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2z"/></svg></span></a>の JavaScript 版（zip形式で圧縮）をダウンロードします。OpenSiv3D v0.6.15 で検証済みの SDK バージョンは <code>v4.2.0.0</code> です。</p>
+<h2 id="準備2--プロジェクトの準備">準備2 | プロジェクトの準備<a class="headerlink" href="#準備2--プロジェクトの準備" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p>Siv3D for Webのプロジェクトを作成します。詳しい手順は<a href="https://siv3d.github.io/ja-jp/download/web/" target="_blank">OpenSiv3D for Web<span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2z"/></svg></span></a>を参照してください。</p>
+</li>
+<li>
+<p>Siv3D SDK フォルダ内の <code>addon/Multiplayer_Photon</code> フォルダから 4 つのファイル <code>Multiplayer_Photon.hpp</code>, <code>Multiplayer_Photon.cpp</code>, <code>Multiplayer_Photon.js</code>, <code>PHOTON_APP_ID.SECRET</code> をコピーして、プロジェクトの Main.cpp があるフォルダに配置します。また、ダウンロードした zip 形式のファイルを展開し、<code>lib</code>フォルダ内の<code>photon.js</code>ファイルも同様に Main.cpp があるフォルダに配置します。</p>
+</li>
+</ol>
+<div class="admonition info">
+<p><code>Multiplayer Photon</code>の Web 版の最新版のファイルは<a href="https://github.com/s4l2vx1/Siv3DWebPhotonDemo" target="_blank">github.com<span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2z"/></svg></span></a>からも入手可能です。リポジトリ内の<code>Multiplayer_Photon.hpp</code>, <code>Multiplayer_Photon.cpp</code>, <code>Multiplayer_Photon.js</code>をコピーして使用してください。<code>PHOTON_APP_ID.SECRET</code>はデスクトップ版と共通のものを使用してください。</p>
+</div>
+<ol>
+<li>
+<p><code>Multiplayer_Photon.cpp</code>をビルド対象に含むように設定し、リンカオプションを設定します。</p>
+<div class="admonition info">
+<p class="admonition-title">Visual Studio の場合</p>
+<p>プロジェクトのプロパティを開き、<code>Emscriptenリンカ / 入力</code>のページ内に移動し、<code>Pre-Add Javascript File</code>に<code>???/lib/photon.js</code>を追加し、追加の JavaScript ライブラリに<code>$(ProjectDir)/MultiplayerPhoton.js</code>を追加します。</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Visual Studio Code の場合</p>
+<p><code>Link.rsp</code>ファイルに<code>--js-library MultiplayerPhoton.js</code> <code>--pre-js ???/lib/photon.js</code>を追加します。</p>
+</div>
+</li>
+<li>
+<p>これでビルドができればプロジェクトの準備は完了です</p>
+</li>
+</ol>
+<details class="info">
+<summary>起動時にエラーが出る場合</summary>
+<p>起動直後に上部のステータスバーが赤色に変化し、ブラウザのコンソールに以下のようなエラーが表示されることがあります。
+Emscriptenのリンカオプションに<code>-s ASYNCIFY_STACK_SIZE=24576</code>のように設定し、スタックサイズを増加させると解決する場合があります。
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Uncaught RuntimeError: Aborted(RuntimeError: unreachable)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    at abort (index.js:6280:11)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    at runAndAbortIfError (index.js:14851:9)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    at Object.maybeStopUnwind (index.js:14954:11)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    at ret.&lt;computed&gt; (index.js:14932:30)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    at index.js:6326:22
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    at callMain (index.js:20385:15)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    at doRun (index.js:20440:23)
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    at index.js:20451:7
 </code></pre></div></p>
+</details>
+<h2 id="準備3--photon-app-id-を取得しプロジェクトに設定する">準備3 | Photon App ID を取得し、プロジェクトに設定する<a class="headerlink" href="#準備3--photon-app-id-を取得しプロジェクトに設定する" title="Permanent link">&para;</a></h2>
+<p>Photon Web サイトログイン後、ダッシュボード画面を開きます。</p>
+<p><img alt="alt text" src="../image-3.png" /></p>
+<p>ダッシュボード画面の CREATE A NEW APP を押して情報を入力し、CREATE から新しい Photon App ID を発行します。Photon Type は Realtime を選択します。それ以外の入力項目は任意です。</p>
+<p><img alt="alt text" src="../image-4.png" /></p>
+<ul>
+<li>発行される Photon App ID は <code>"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</code> のような英数字の羅列です。</li>
+<li>プロジェクトの PHOTON_APP_ID.SECRET に書かれているデフォルトの App ID <code>"00000000-0000-0000-0000-000000000000"</code> を、発行された Photon App ID で上書きします。</li>
+<li>(プロジェクトを git 管理している場合) この Photon App ID は第三者に知られてはいけません。<code>.gitignore</code> を用いて、<code>PHOTON_APP_ID.SECRET</code> を管理対象から外すようにしましょう</li>
+</ul>
 
 
 
@@ -666,7 +723,7 @@
       <nav class="md-footer__inner md-grid" aria-label="フッター" >
         
           
-          <a href="../targetGroup/" class="md-footer__link md-footer__link--prev" aria-label="前: イベントターゲットグループ">
+          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="前: Siv3D でオンラインゲームをつくろう">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -676,11 +733,27 @@
                 前
               </span>
               <div class="md-ellipsis">
-                イベントターゲットグループ
+                Siv3D でオンラインゲームをつくろう
               </div>
             </div>
           </a>
         
+        
+          
+          <a href="../verify_the_connection/" class="md-footer__link md-footer__link--next" aria-label="次: 動かしてみよう">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                次
+              </span>
+              <div class="md-ellipsis">
+                動かしてみよう
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     
