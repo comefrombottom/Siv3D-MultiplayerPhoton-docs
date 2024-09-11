@@ -4,7 +4,7 @@
 ## フィルター
 `propertyFilter`と`expectedMaxPlayers`はランダムマッチング時のフィルターとして機能します。
 
-ルームの公開されたルームプロパティを参照し、`propertyFilter`で与えた`{key,value}`が全て一致するルームをランダムマッチングの対象とします。`propertyFilter`が公開されたルームプロパティを網羅している必要はありません。
+各ルームのルームプロパティを参照し、`propertyFilter`で与えた`{key,value}`が全て一致するルームをランダムマッチングの対象とします。`propertyFilter`が公開されたルームプロパティを網羅している必要はありません。
 
 `expectedMaxPlayers`はルームに設定された`maxPlayers`を参照し、一致するもののみを対象とします。0が設定された場合は無視されます。
 
