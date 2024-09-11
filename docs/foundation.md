@@ -1,31 +1,34 @@
 # 基礎のプログラム
 ## クライアントの作成
 クライアントとは、サーバーと通信を行うためのものです。マルチプレイヤー通信はすべてこのクライアントを介して行われます。
-### インクルード
-`<Siv3D.hpp>` に続いて、"Multiplayer_Photon.hpp" と "PHOTON_APP_ID.SECRET" をインクルードします。
 
-### Multiplayer_Photon の継承
-`Multiplayer_Photon` を継承したクラス `MyClient`（名前は任意）を作成し、`using Multiplayer_Photon::Multiplayer_Photon;` で `Multiplayer_Photon` のコンストラクタも継承します。
+### 独自のクライアントクラスを作成
+`<Siv3D.hpp>` に続いて、"Multiplayer_Photon.hpp" と "PHOTON_APP_ID.SECRET" をインクルードし、`Multiplayer_Photon` を継承したクラス `MyClient`（名前は任意）を作成します。コンストラクタで`init()`関数（あるいは`Multiplayer_Photon`の引数付きコンストラクタ）を呼び出し中身を作成します。
 
 ### Photon App ID の格納
-`const std::string secretAppID{ SIV3D_OBFUSCATE(PHOTON_APP_ID) };` とすることで、実行時に Photon App ID が `secretAppID` に格納されます。直接 `const std::string secretAppID{ PHOTON_APP_ID };` とすると、ビルドした実行ファイルのバイナリを解析した際に、Photon App ID がそのまま表れてしまいますが、`SIV3D_OBFUSCATE()` で包むことで、多少の難読化が施されます。
+`std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID))` を`init()`に渡しましょう。直接 `std::string(PHOTON_APP_ID)` とすると、ビルドした実行ファイルのバイナリを解析した際に、Photon App ID がそのまま表れてしまいますが、`SIV3D_OBFUSCATE()` で包むことで、多少の難読化が施されます。
 
-### MyClient の作成
-MyClient オブジェクトを作成します。コンストラクタには Photon App ID, アプリケーションのバージョン、詳細なデバッグ表示の有無、の 3 つのパラメータを渡します。
+### MyClient の構築
+`init()`には Photon App ID, アプリケーションのバージョン、詳細なデバッグ表示の有無、の 3 つのパラメータを渡します。
 Photon App ID が同じでも、アプリケーションのバージョンが異なるプログラムとは通信ができません。ゲームのバージョンアップ後に、新旧のバージョン同士で通信してしまうことを防ぐことができます。
-詳細なデバッグ表示を有効 (`Verbose::Yes`) にすると、Multiplayer_Photon の各種コールバック関数が呼ばれた際に、詳細な情報を Print 経由で出力するようになります。開発中は有効にしておくとデバッグに便利です。リリース時には Verbose::No を選択すると、一切 Print しなくなります。
+詳細なデバッグ表示を有効 (`Verbose::Yes`) にすると、`Multiplayer_Photon` クラスの protected メンバ変数 `m_verbose` が `true` になり、`Multiplayer_Photon` の各種コールバック関数が呼ばれた際に、詳細な情報を Print 経由で出力するようになります。開発中は有効にしておくとデバッグに便利です。リリース時には Verbose::No を選択すると、一切 Print しなくなります。
+
 ```cpp
 # include <Siv3D.hpp> // Siv3D v0.6.15
 # include "Multiplayer_Photon.hpp"
 # include "PHOTON_APP_ID.SECRET"
 
-// Multiplayer_Photon を継承したクラス
 class MyClient : public Multiplayer_Photon
 {
 public:
-
-	// Multiplayer_Photon のコンストラクタを継承
-	using Multiplayer_Photon::Multiplayer_Photon;
+	MyClient() {
+		//init()を呼び出し、クライアントの中身を構築する。
+		// - Photon App ID 
+		//   実行ファイルに App ID が直接埋め込まれないよう、SIV3D_OBFUSCATE() でラップ
+		// - 今回作ったアプリケーションのバージョン（これが異なるプログラムとは通信できない）
+		// - Print によるデバッグ出力の有無
+		init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::Yes);
+	}
 };
 
 void Main()
@@ -33,41 +36,7 @@ void Main()
 	// ウィンドウを　1280x720 にリサイズ
 	Window::Resize(1280, 720);
 
-	// Photon App ID
-	// 実行ファイルに App ID が直接埋め込まれないよう、SIV3D_OBFUSCATE() でラップ
-	const std::string secretAppID{ SIV3D_OBFUSCATE(PHOTON_APP_ID) };
-
-	// サーバーと通信するためのクラス
-	// - Photon App ID
-	// - 今回作ったアプリケーションのバージョン（これが異なるプログラムとは通信できない）
-	// - Print によるデバッグ出力の有無
-	MyClient client{ secretAppID, U"1.0", Verbose::Yes };
-
-	while (System::Update())
-	{
-        
-	}
-}
-```
-
-チャットルームのサンプルコードのように、自作クラスのコンストラクタで各引き数を渡してもよい。
-```cpp
-# include <Siv3D.hpp> // Siv3D v0.6.15
-# include "Multiplayer_Photon.hpp"
-# include "PHOTON_APP_ID.SECRET"
-
-class MyClient : public Multiplayer_Photon
-{
-public:
-	MyClient()
-		:Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)),U"1.0",Verbose::Yes)
-	{}
-};
-
-void Main()
-{
-	Window::Resize(1280, 720);
-
+	// サーバーと通信するためのクライアントを作成
 	MyClient client;
 
 	while (System::Update())
@@ -76,18 +45,28 @@ void Main()
 	}
 }
 ```
+
 ### デバッグ出力先を変更
 `Multiplayer_Photon`のコンストラクタの第3引数に`Verbose`の代わりに`Console`などの文字列を受取る関数、関数オブジェクトを与えると、デバッグ出力の出力先を変更することができます。(デフォルトでは`Print`)　この場合、第4引数で`Verbose`を指定できます。
+
+各自でにデバッグ出力をする場合は、`.debugLog()`を用いましょう。指定した出力先に合わせて出力でき、`Verbose::No`の時出力しなくなります。
+
 ```cpp
 class MyClient : public Multiplayer_Photon
 {
 public:
 	//デバッグ情報をConsole出力
 	MyClient()
-		:Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)),U"1.0",Console)
-	{}
+	{
+		init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Console);
+
+		//デフォルトではPrint出力するが、Consoleを指定したのでConsole出力
+		//Verbose::Noの時は何もしない。
+		debugLog(U"MyClient created");
+	}
 };
 ```
+
 
 ## 接続・維持・切断
 
@@ -110,8 +89,9 @@ class MyClient : public Multiplayer_Photon
 {
 public:
 	MyClient()
-		:Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)),U"1.0",Verbose::Yes)
-	{}
+	{
+		init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::Yes);
+	}
 };
 
 void Main()
@@ -125,7 +105,7 @@ void Main()
 		client.update();
 
 		// サーバーに接続するボタン
-		if (SimpleGUI::Button(U"Connect", Vec2{ 1000, 20 }, 160, (not client.isActive())))
+		if (SimpleGUI::Button(U"Connect", Vec2{ 1000, 20 }, 160, client.isDisconnected()))
 		{
 			// ユーザ名
 			const String userName = U"siv3d-kun";
@@ -142,11 +122,12 @@ void Main()
 ```
 ## クライアントの状態
 クライアントは、
+
 - サーバーに接続されていない状態 `Disconnected`
 - サーバーに接続され、ロビーにいる状態 `InLobby`
 - 部屋にいる状態 `InRoom`
 
-の3つの状態を主にとり、加えてそれらの移行状態を合わせて7つの状態を取りえます。
+の3つの状態を主にとり、それらの移行状態を合わせて7つの状態を取りえます。
 ```cpp
 enum class ClientState {
 	Disconnected,
@@ -160,17 +141,21 @@ enum class ClientState {
 ```
 クライアントの状態は`.getClientState()`で取得できます。
 
-
+`ClientState`はフォーマットに対応しているため、そのままPrint出力などが可能です。
+```cpp
+Print << client.getClientState();
+```
 
 ## ルームの作成・入室
 ロビーには、複数の部屋を作成することができ、またその中から部屋を選んで入室することが出来ます。マルチプレイヤー通信は同部屋の中にいるプレイヤー間でのみ行われ、ロビーで通信することはできません。
 
-- `.createRoom(RoomNameView roomName)` : ロビー内に部屋を作成し、入室する。※`RoomNameView`は`StringView`のエイリアス
+- `.createRoom(RoomNameView roomName)` : ロビー内に部屋を作成し、入室する。
 - `.joinRoom(RoomNameView roomName)` : ロビー内にすでにある部屋に対して入室する。
 - `.leaveRoom()` : 今いる部屋から退出する。
 
-`roomName`はRoomIDとして機能し、同じ名前のルームを複数作ることはできません。また、日本語の文字などを入れてはいけません。英数字と記号のみで構成してください。
+※`RoomName`は`String`,`RoomNameView`は`StringView`のエイリアス
 
+`roomName`はRoomIDとして機能し、同じ名前のルームを複数作ることはできません。
 
 ### ルーム作成オプション
 
@@ -179,7 +164,7 @@ enum class ClientState {
 - `isVisible()` : ロビーのルーム一覧に表示されるか。デフォルトで`true`
 - `isOpen()` : 他の人が入室できるか。デフォルトで`true`
 - `maxPlayers()` : ルームに入れる最大人数。0 を指定すると無制限になる。デフォルトで 0
-- `roomDestroyGracePeriod()` : ルームに誰もいなくなってからルームが破棄されるまでの猶予時間。最大5分(300000ms)
+- `roomDestroyGracePeriod()` : ルームに誰もいなくなってからルームが破棄されるまでの猶予時間。最大5分(300000ms)。デフォルトで0ms
 
 などのオプション指定するときに使用します。`.createRoom()`の第二引数に指定して使います。
 ```cpp
@@ -188,14 +173,14 @@ client.createRoom(U"room#" + ToHex(RandomUint32()), RoomCreateOption().isVisible
 ```
 
 ### ロビーから部屋の一覧を取得
-- `.getRoomNameList()` : `Array<RoomName>`でルームの名前一覧を取得する。※`RoomName`は`String`のエイリアス
+- `.getRoomNameList()` : `Array<RoomName>`でルームの名前一覧を取得する。
 
-- `.getRoomList()` : `Array<RoomInfo>`でルームの情報一覧を取得する。`RoomInfo`型はロビーから所得可能なルームの情報をメンバ変数に持っています。名前以上の情報が欲しい場合はこちらを使用します。(`maxPlayers` : 最大人数, `playerCount` : 現在の人数...など)
+- `.getRoomList()` : `Array<RoomInfo>`でルームの情報一覧を取得する。`RoomInfo`型はロビーから所得可能なルームの情報をメンバ変数に持っています。名前以上の情報が欲しい場合はこちらを使用します。(`maxPlayers` : 最大人数, `playerCount` : 現在の人数, ...など)
 
 ### その他
-- `.joinOrCreateRoom(RoomNameView roomName, const RoomCreateOption& option)` : 指定した名前のルームに参加を試み、無かった場合にルームの作成を試みます。
+- `.joinOrCreateRoom()` : 指定した名前のルームに参加を試み、無かった場合にルームの作成を試みます。
 
 - `.joinRandomRoom()` : 既存のルームの中からランダムに参加を試みます。
 
-- `joinRandomOrCreateRoom(RoomNameView roomName, const RoomCreateOption& roomCreateOption)` : ランダムなルームに参加を試み、参加できるルームが無かった場合にルームの作成を試みます。
+- `joinRandomOrCreateRoom()` : ランダムなルームに参加を試み、参加できるルームが無かった場合にルームの作成を試みます。
 

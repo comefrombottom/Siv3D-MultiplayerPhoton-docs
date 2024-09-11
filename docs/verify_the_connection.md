@@ -10,7 +10,7 @@
     class MyClient : public Multiplayer_Photon
     {
     public:
-        MyClient(){
+        MyClient() {
             init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::Yes);
 
             //イベントコード1を受信したときにeventReceived_1を呼ぶように登録
