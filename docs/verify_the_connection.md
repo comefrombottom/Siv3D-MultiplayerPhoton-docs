@@ -10,20 +10,17 @@
     class MyClient : public Multiplayer_Photon
     {
     public:
-        MyClient()
-            :Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)),U"1.0",Verbose::Yes)
-        {}
-    private:
+        MyClient(){
+            init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::Yes);
 
-        //sendEventによって送られてきたイベントに反応し呼ばれる。
-        void customEventAction(const LocalPlayerID playerID, const uint8 eventCode, Deserializer<MemoryViewReader>& reader) override
+            //イベントコード1を受信したときにeventReceived_1を呼ぶように登録
+            RegisterEventCallback(1, &MyClient::eventReceived_1);
+        }
+
+    private:
+        void eventReceived_1(const LocalPlayerID playerID, const String& text)
         {
-            if (eventCode == 1)
-            {
-                String text;
-                reader(text);
-                Print << getUserName(playerID) << U":" << text;
-            }
+            Print << getUserName(playerID) << U":" << text;
         }
     };
 
@@ -41,27 +38,10 @@
 
         while (System::Update())
         {
-            if (client.isActive())
-            {
-                client.update();
-            }
+            client.update();
 
-            ClientState state = client.getClientState();
-
-            Vec2 stateTextPos(1000, 5);
-
-            //クライアントは7つの状態を持つ
-            switch (state)
-            {
-            case s3d::ClientState::Disconnected:
-                font(U"Disconnected").draw(stateTextPos);
-                break;
-            case s3d::ClientState::ConnectingToLobby:
-                font(U"ConnectingToLobby").draw(stateTextPos);
-                break;
-            case s3d::ClientState::InLobby:
+            if (client.isInLobby()) {
                 Scene::Rect().draw(Palette::Steelblue);
-                font(U"InLobby").draw(stateTextPos);
 
                 //ロビー内に存在するルームを列挙
                 font(U"Rooms").draw(Vec2{ 650, 5 });
@@ -77,16 +57,14 @@
                         }
                     }
                 }
-                break;
-            case s3d::ClientState::JoiningRoom:
-                font(U"JoiningRoom").draw(stateTextPos);
-                break;
-            case s3d::ClientState::InRoom:
+            }
+
+            if (client.isInRoom()) {
                 Scene::Rect().draw(Palette::Sienna);
-                font(U"InRoom").draw(stateTextPos);
+
                 font(U"Room name : ", client.getCurrentRoomName()).draw(Arg::topRight(Scene::Width() - 20, Scene::Height() - 90));
 
-                SimpleGUI::TextBox(sendText, Vec2{ 20, Scene::Height()-50}, 1000, unspecified, client.isInRoom());
+                SimpleGUI::TextBox(sendText, Vec2{ 20, Scene::Height() - 50 }, 1000, unspecified, client.isInRoom());
 
                 //ボタンを押すかエンターキーを押すと文字列を送信
                 if (SimpleGUI::Button(U">>>", Vec2{ 1040, Scene::Height() - 50 }, 160, client.isInRoom()) or sendText.enterKey)
@@ -95,31 +73,33 @@
                     client.sendEvent(MultiplayerEvent(1), sendText.text);
                     Print << U"自分：" << sendText.text;
                     sendText.clear();
+                    sendText.active = true;
                 }
-
-                break;
-            case s3d::ClientState::LeavingRoom:
-                font(U"LeavingRoom").draw(stateTextPos);
-                break;
-            case s3d::ClientState::Disconnecting:
-                font(U"Disconnecting").draw(stateTextPos);
-                break;
-            default:
-                break;
             }
 
+            //クライアントは7つの状態を持つ
+            font(U"ClientState:", client.getClientState()).draw(1000, 5);
+
+            if (client.isConnectingToLobby() or client.isJoiningRoom() or client.isLeavingRoom() or client.isDisconnecting()) {
+                //待機画面のクルクル
+                size_t t = Floor(fmod(Scene::Time() / 0.1, 8));
+                for (size_t i : step(8)) {
+                    Vec2 n = Circular(1, i * Math::TwoPi / 8);
+                    Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
+                }
+            }
 
             //コントロールパネル
 
             double y = 0;
-            if (SimpleGUI::Button(U"Disconnect", Vec2(1000, y+=40), unspecified, client.isActive()))
+            if (SimpleGUI::Button(U"Disconnect", Vec2(1000, y += 40), unspecified, client.isActive()))
             {
                 client.disconnect();
             }
 
-            SimpleGUI::TextBox(playerName, Vec2(1000, y += 40), 200, unspecified, state == ClientState::Disconnected);
+            SimpleGUI::TextBox(playerName, Vec2(1000, y += 40), 200, unspecified, client.isDisconnected());
 
-            if (SimpleGUI::Button(U"Connect", Vec2(1000, y+=40), unspecified, state == ClientState::Disconnected))
+            if (SimpleGUI::Button(U"Connect", Vec2(1000, y += 40), unspecified, client.isDisconnected()))
             {
                 //名前、リージョンを指定して接続
                 client.connect(playerName.text, U"jp");
@@ -128,7 +108,7 @@
             if (SimpleGUI::Button(U"Create Room", Vec2{ 1000, (y += 40) }, 160, client.isInLobby()))
             {
                 //部屋名は被ってはいけないのでランダムな文字列を付加
-                const RoomName roomName = (client.getUserName() + U"'s room-" + ToHex(RandomUint32()));
+                const RoomName roomName = (U"room #" + ToHex(RandomUint32()));
 
                 //ロビー内に部屋を作成
                 client.createRoom(roomName);
@@ -143,17 +123,18 @@
             {
                 ClearPrint();
             }
-            
+
         }
     }
+
     ```
 
 上記サンプルコードを貼り付け、実行してみましょう。`Connect`を押し、少しまって画面が青くなったら接続成功です。その後`Create Room`を押すと部屋を作成と同時に入室でき、画面が茶色くなったら部屋にいる状態です。画面下のテキストボックスからチャットを打てますが、今は一人しかいないため意味はないです。
 
 ### 一人で通信を確認する
 
-一度実行Windowを閉じて、プロジェクトのAppフォルダを開きます。先ほど作った実行ファイル（.exeファイル）を複数回ダブルクリックして起動すれば、一台のパソコンで通信が行えているのを確認できます。
+プロジェクトのAppフォルダを開きます。先ほど作った実行ファイル（.exeファイル）を複数回ダブルクリックして起動すれば、一台のパソコンで通信が行えているのを確認できます。
 
-一人目が部屋を作成したら、二人目はRoomsの下に部屋の名前で入室ボタンが表示されるはずなので、そこから同じ部屋に入れます。
+一人目が部屋を作成したら、二人目はRoomsの下に部屋の名前で入室ボタンが表示されるはずなので、そこから同じ部屋に入れます。チャットを送りあえることを確認しましょう。
 
-![alt text](image-6.png)
+![alt text](image-7.png)

@@ -5,7 +5,7 @@
 デフォルトのルームは再入室できる設定になっていません。再入室が出来るようにするには、`RoomCreateOption`の`rejoinGracePeriod()`を設定する必要があります。`rejoinGracePeriod()`で再参加可能な猶予時間を設定することができます。例えば、`RoomCreateOption().rejoinGracePeriod(1min)`とすると、1分間は再入室が可能となります。`RoomCreateOption().rejoinGracePeriod(unspecified)`とすると部屋が存続する限り再入室可能となります。
 
 ### 再入室可能な条件
-再入室可能な部屋に通常の`.joinRoom()`で入室することはできません。また、`.leaveRoom()`を用いて明示的に退出した場合は、再入室できません。再入室可能な部屋は、`.disconnect()`で接続したり、予期せず切断されたり、`.leaveRoom(true)`（`willComeBack`を引数にとる）で退出したときです。
+再入室可能な部屋に通常の`.joinRoom()`で入室することはできません。また、`.leaveRoom()`を用いて明示的に退出した場合は、再入室できません。再入室可能な部屋は、`.disconnect()`で切断したり、予期せず切断されたり、`.leaveRoom(true)`（`willComeBack`を引数にとる）で退出したときです。
 
 ### leaveRoomEventAction と isInactive
 `.leaveRoom()`や`.leaveRoom(false)`によって退出した場合、つまりこれ以降そのプレイヤーが参加することがない場合、他のプレイヤーが退出したことを知らせるコールバックである`void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive);`は、引数の`isInactive`を`false`とします。それ以外で退出した場合でかつ部屋の`rejoinGracePeriod()`が0msより大きく設定されているとき、つまり今後また再入室する可能性がある場合`isInactive`を`true`とします。

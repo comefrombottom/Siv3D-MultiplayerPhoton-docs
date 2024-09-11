@@ -59,7 +59,7 @@ struct MyData
 
 `void customEventAction(LocalPlayerID playerID, uint8 eventCode, Deserializer<MemoryViewReader>& reader);`
 
-をオーバーライドすることで受取ることが出来ます。
+をオーバーライドすることで受け取ることが出来ます。
 
 例えば、先ほどの`sendEvent()`の例に全て対応するなら、
 
