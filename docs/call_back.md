@@ -65,16 +65,19 @@ client.○○○()という操作に対して○○○Return()を返す。
     # include "Multiplayer_Photon.hpp"
     # include "PHOTON_APP_ID.SECRET"
 
-
     class MyClient : public Multiplayer_Photon
     {
     public:
-        MyClient()
-            :Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)),U"1.0",Verbose::No)
-        {}
+        MyClient() {
+            init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::Yes);
+
+            //イベントコード1を受信したときにeventReceived_1を呼ぶように登録
+            RegisterEventCallback(1, &MyClient::eventReceived_1);
+        }
+
     private:
 
-        void connectReturn(int32 errorCode, const String& errorString, const String& region, const String& cluster) override{
+        void connectReturn(int32 errorCode, const String& errorString, const String& region, const String& cluster) override {
             if (errorCode)
             {
                 Print << U"connectReturn error!!! " << errorString;
@@ -85,11 +88,11 @@ client.○○○()という操作に対して○○○Return()を返す。
             }
         }
 
-        void disconnectReturn() override{
+        void disconnectReturn() override {
             Print << U"disconnectReturn!!!";
         }
 
-        void createRoomReturn(LocalPlayerID playerID, int32 errorCode, const String& errorString) override{
+        void createRoomReturn(LocalPlayerID playerID, int32 errorCode, const String& errorString) override {
             if (errorCode)
             {
                 Print << U"createRoomReturn error!!! " << errorString;
@@ -100,7 +103,7 @@ client.○○○()という操作に対して○○○Return()を返す。
             }
         }
 
-        void joinRoomReturn(LocalPlayerID playerID, int32 errorCode, const String& errorString) override{
+        void joinRoomReturn(LocalPlayerID playerID, int32 errorCode, const String& errorString) override {
             if (errorCode)
             {
                 Print << U"joinRoomReturn error!!! " << errorString;
@@ -111,7 +114,7 @@ client.○○○()という操作に対して○○○Return()を返す。
             }
         }
 
-        void leaveRoomReturn(int32 errorCode, const String& errorString) override{
+        void leaveRoomReturn(int32 errorCode, const String& errorString) override {
             if (errorCode)
             {
                 Print << U"leaveRoomReturn error!!! " << errorString;
@@ -122,23 +125,17 @@ client.○○○()という操作に対して○○○Return()を返す。
             }
         }
 
-        void joinRoomEventAction(const LocalPlayer& newPlayer, const Array<LocalPlayerID>& playerIDs, bool isSelf) override{
+        void joinRoomEventAction(const LocalPlayer& newPlayer, const Array<LocalPlayerID>& playerIDs, bool isSelf) override {
             Print << U"joinRoomEventAction!!!";
         }
 
-        void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive) override{
+        void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive) override {
             Print << U"leaveRoomEventAction!!!";
         }
 
-        //sendEventによって送られてきたイベントに反応し呼ばれる。
-        void customEventAction(const LocalPlayerID playerID, const uint8 eventCode, Deserializer<MemoryViewReader>& reader) override
+        void eventReceived_1(const LocalPlayerID playerID, const String& text)
         {
-            if (eventCode == 1)
-            {
-                String text;
-                reader(text);
-                Print << getUserName(playerID) << U":" << text;
-            }
+            Print << getUserName(playerID) << U":" << text;
         }
     };
 
@@ -156,27 +153,10 @@ client.○○○()という操作に対して○○○Return()を返す。
 
         while (System::Update())
         {
-            if (client.isActive())
-            {
-                client.update();
-            }
+            client.update();
 
-            ClientState state = client.getClientState();
-
-            Vec2 stateTextPos(1000, 5);
-
-            //クライアントは7つの状態を持つ
-            switch (state)
-            {
-            case s3d::ClientState::Disconnected:
-                font(U"Disconnected").draw(stateTextPos);
-                break;
-            case s3d::ClientState::ConnectingToLobby:
-                font(U"ConnectingToLobby").draw(stateTextPos);
-                break;
-            case s3d::ClientState::InLobby:
+            if (client.isInLobby()) {
                 Scene::Rect().draw(Palette::Steelblue);
-                font(U"InLobby").draw(stateTextPos);
 
                 //ロビー内に存在するルームを列挙
                 font(U"Rooms").draw(Vec2{ 650, 5 });
@@ -192,16 +172,14 @@ client.○○○()という操作に対して○○○Return()を返す。
                         }
                     }
                 }
-                break;
-            case s3d::ClientState::JoiningRoom:
-                font(U"JoiningRoom").draw(stateTextPos);
-                break;
-            case s3d::ClientState::InRoom:
+            }
+
+            if (client.isInRoom()) {
                 Scene::Rect().draw(Palette::Sienna);
-                font(U"InRoom").draw(stateTextPos);
+
                 font(U"Room name : ", client.getCurrentRoomName()).draw(Arg::topRight(Scene::Width() - 20, Scene::Height() - 90));
 
-                SimpleGUI::TextBox(sendText, Vec2{ 20, Scene::Height()-50}, 1000, unspecified, client.isInRoom());
+                SimpleGUI::TextBox(sendText, Vec2{ 20, Scene::Height() - 50 }, 1000, unspecified, client.isInRoom());
 
                 //ボタンを押すかエンターキーを押すと文字列を送信
                 if (SimpleGUI::Button(U">>>", Vec2{ 1040, Scene::Height() - 50 }, 160, client.isInRoom()) or sendText.enterKey)
@@ -210,31 +188,33 @@ client.○○○()という操作に対して○○○Return()を返す。
                     client.sendEvent(MultiplayerEvent(1), sendText.text);
                     Print << U"自分：" << sendText.text;
                     sendText.clear();
+                    sendText.active = true;
                 }
-
-                break;
-            case s3d::ClientState::LeavingRoom:
-                font(U"LeavingRoom").draw(stateTextPos);
-                break;
-            case s3d::ClientState::Disconnecting:
-                font(U"Disconnecting").draw(stateTextPos);
-                break;
-            default:
-                break;
             }
 
+            //クライアントは7つの状態を持つ
+            font(U"ClientState:", client.getClientState()).draw(1000, 5);
+
+            if (client.isConnectingToLobby() or client.isJoiningRoom() or client.isLeavingRoom() or client.isDisconnecting()) {
+                //待機画面のクルクル
+                size_t t = Floor(fmod(Scene::Time() / 0.1, 8));
+                for (size_t i : step(8)) {
+                    Vec2 n = Circular(1, i * Math::TwoPi / 8);
+                    Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
+                }
+            }
 
             //コントロールパネル
 
             double y = 0;
-            if (SimpleGUI::Button(U"Disconnect", Vec2(1000, y+=40), unspecified, client.isActive()))
+            if (SimpleGUI::Button(U"Disconnect", Vec2(1000, y += 40), unspecified, client.isActive()))
             {
                 client.disconnect();
             }
 
-            SimpleGUI::TextBox(playerName, Vec2(1000, y += 40), 200, unspecified, state == ClientState::Disconnected);
+            SimpleGUI::TextBox(playerName, Vec2(1000, y += 40), 200, unspecified, client.isDisconnected());
 
-            if (SimpleGUI::Button(U"Connect", Vec2(1000, y+=40), unspecified, state == ClientState::Disconnected))
+            if (SimpleGUI::Button(U"Connect", Vec2(1000, y += 40), unspecified, client.isDisconnected()))
             {
                 //名前、リージョンを指定して接続
                 client.connect(playerName.text, U"jp");
@@ -243,7 +223,7 @@ client.○○○()という操作に対して○○○Return()を返す。
             if (SimpleGUI::Button(U"Create Room", Vec2{ 1000, (y += 40) }, 160, client.isInLobby()))
             {
                 //部屋名は被ってはいけないのでランダムな文字列を付加
-                const RoomName roomName = (client.getUserName() + U"'s room-" + ToHex(RandomUint32()));
+                const RoomName roomName = (U"room #" + ToHex(RandomUint32()));
 
                 //ロビー内に部屋を作成
                 client.createRoom(roomName);
@@ -258,7 +238,7 @@ client.○○○()という操作に対して○○○Return()を返す。
             {
                 ClearPrint();
             }
-            
+
         }
     }
     ```
