@@ -92,7 +92,7 @@ client.○○○()という操作に対して○○○Return()を返す。
             Print << U"disconnectReturn!!!";
         }
 
-        void createRoomReturn(LocalPlayerID playerID, int32 errorCode, const String& errorString) override {
+        void createRoomReturn([[maybe_unused]] LocalPlayerID playerID, int32 errorCode, const String& errorString) override {
             if (errorCode)
             {
                 Print << U"createRoomReturn error!!! " << errorString;
@@ -103,7 +103,7 @@ client.○○○()という操作に対して○○○Return()を返す。
             }
         }
 
-        void joinRoomReturn(LocalPlayerID playerID, int32 errorCode, const String& errorString) override {
+        void joinRoomReturn([[maybe_unused]] LocalPlayerID playerID, int32 errorCode, const String& errorString) override {
             if (errorCode)
             {
                 Print << U"joinRoomReturn error!!! " << errorString;
@@ -125,11 +125,11 @@ client.○○○()という操作に対して○○○Return()を返す。
             }
         }
 
-        void joinRoomEventAction(const LocalPlayer& newPlayer, const Array<LocalPlayerID>& playerIDs, bool isSelf) override {
+        void joinRoomEventAction([[maybe_unused]] const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, [[maybe_unused]] bool isSelf) override {
             Print << U"joinRoomEventAction!!!";
         }
 
-        void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive) override {
+        void leaveRoomEventAction([[maybe_unused]] LocalPlayerID playerID, bool isInactive) override {
             Print << U"leaveRoomEventAction!!!";
         }
 
@@ -197,7 +197,7 @@ client.○○○()という操作に対して○○○Return()を返す。
 
             if (client.isConnectingToLobby() or client.isJoiningRoom() or client.isLeavingRoom() or client.isDisconnecting()) {
                 //待機画面のクルクル
-                size_t t = Floor(fmod(Scene::Time() / 0.1, 8));
+                size_t t = static_cast<size_t>(Floor(fmod(Scene::Time() / 0.1, 8)));
                 for (size_t i : step(8)) {
                     Vec2 n = Circular(1, i * Math::TwoPi / 8);
                     Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
