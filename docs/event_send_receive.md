@@ -11,29 +11,40 @@
 いくつか例を上げます。
 
 - イベントコード 1 で、こんにちは。と送信
-```cpp
-client.sendEvent(MultiplayerEvent(1),　String(U"こんにちは。"));
-```
+    ```cpp
+    client.sendEvent(MultiplayerEvent(1),　String(U"こんにちは。"));
+    ```
+
+    `MultiplayerEvent`は省略して書ける。
+
+    ```cpp
+    client.sendEvent({ 1 },　String(U"こんにちは。"));
+    ```
 
 - イベントコード 2 で、Vec2型, int型, double型のデータを送信
-```cpp
-client.sendEvent(MultiplayerEvent(2), Cursor::PosF(), 12, 3.4);
-```
+    ```cpp
+    client.sendEvent({ 2 }, Cursor::PosF(), 12, 3.4);
+    ```
 
 - イベントコード 3 で、自分含めた全てのプレイヤーに 3.14 を送信
-```cpp
-client.sendEvent(MultiplayerEvent(3, EventReceiverOption::All), 3.14);
-```
+
+    ```cpp
+    client.sendEvent(MultiplayerEvent(3, ReceiverOption::All), 3.14);
+    ```
+    ２引数の場合も`MultiplayerEvent`は省略して書ける。
+    ```cpp
+    client.sendEvent({ 3, ReceiverOption::All }, 3.14);
+    ```
 
 - ターゲットの`LocalPlayerID`を指定して送信。この例では`LocalPlayerID`が２と３のプレイヤーが受信する。
-```cpp
-client.sendEvent(MultiplayerEvent(4, Array<LocalPlayerID>{2, 3}), Circle(10,10,10), RectF(10,10,20,30));
-```
+    ```cpp
+    client.sendEvent({ 4, Array<LocalPlayerID>{2, 3} }, Circle(10,10,10), RectF(10,10,20,30));
+    ```
 
 - イベントコードのみを送信してもよい。
-```cpp
-client.sendEvent(MultiplayerEvent(5));
-```
+    ```cpp
+    client.sendEvent({ 5 });
+    ```
 
 ## 送信可能な型
 `sendEvent()`は内部で`Serializer<MemoryWriter>{}`を使用しています。つまり、Siv3Dで規定されたシリアライズ可能な型は全て送信可能です。また、独自に作った型も、以下のようにメンバ関数を定義することでシリアライズに対応し、送信可能な型にすることが出来ます。
@@ -214,11 +225,9 @@ private:
 
         while (System::Update())
         {
-            if (client.isActive())
-            {
-                client.update();
-            }
-            else {
+            client.update();
+
+            if (client.isDisconnected()) {
                 client.connect(U"player", U"jp");
             }
 
@@ -231,42 +240,51 @@ private:
             {
                 Scene::Rect().draw(Palette::Sienna);
             }
+            else {
+                //待機画面のクルクル
+                size_t t = Floor(fmod(Scene::Time() / 0.1, 8));
+                for (size_t i : step(8)) {
+                    Vec2 n = Circular(1, i * Math::TwoPi / 8);
+                    Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
+                }
+            }
 
 
             //コントロールパネル
 
             double y = 0;
 
-            if(SimpleGUI::Button(U"sendEvent 1", Vec2{ 1000, (y += 40) }, 160))
+            if (SimpleGUI::Button(U"sendEvent 1", Vec2{ 1000, (y += 40) }, 160))
             {
-                client.sendEvent(MultiplayerEvent(1), String(U"こんにちは。"));
+                client.sendEvent({ 1 }, String(U"こんにちは。"));
             }
 
             if (SimpleGUI::Button(U"sendEvent 2", Vec2{ 1000, (y += 40) }, 160))
             {
-                client.sendEvent(MultiplayerEvent(2), Cursor::PosF(), 12, 3.4);
+                client.sendEvent({ 2 }, Cursor::PosF(), 12, 3.4);
             }
 
             if (SimpleGUI::Button(U"sendEvent 3", Vec2{ 1000, (y += 40) }, 160))
             {
-                client.sendEvent(MultiplayerEvent(3, EventReceiverOption::All), 3.14);
+                client.sendEvent({ 3, ReceiverOption::All }, 3.14);
             }
 
             if (SimpleGUI::Button(U"sendEvent 4", Vec2{ 1000, (y += 40) }, 160))
             {
-                client.sendEvent(MultiplayerEvent(4, Array<LocalPlayerID>{2, 3}), Circle(10, 10, 10), RectF(10, 10, 20, 30));
+                client.sendEvent({ 4, Array<LocalPlayerID>{2, 3} }, Circle(10, 10, 10), RectF(10, 10, 20, 30));
             }
 
             if (SimpleGUI::Button(U"sendEvent 5", Vec2{ 1000, (y += 40) }, 160))
             {
-                client.sendEvent(MultiplayerEvent(5));
+                client.sendEvent({ 5 });
             }
 
             if (SimpleGUI::Button(U"ClearPrint()", Vec2{ 1000, (y += 40) }, 160))
             {
                 ClearPrint();
             }
-            
+
         }
     }
+
     ```
