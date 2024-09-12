@@ -96,7 +96,7 @@
 
 		Optional<size_t> findBadge(const Vec2& pos) const
 		{
-			for (auto [i, badge] : m_badges | std::views::enumerate | std::views::reverse)
+			for (auto [i, badge] : ReverseIndexed(m_badges))
 			{
 				if (badge.circle.intersects(pos))
 				{
@@ -231,12 +231,12 @@
 
 		//イベントを受信したらそれに応じた処理を行う
 
-		void eventReceived_sendShareGameData(LocalPlayerID playerID, const ShareGameData& data)
+		void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
 		{
 			shareGameData = data;
 		}
 
-		void eventReceived_addPlayer(LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
+		void eventReceived_addPlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
 		{
 			if (not shareGameData) return;
 			shareGameData->players().emplace(newPlayerID, data);
@@ -264,7 +264,7 @@
 			sendEvent({ EventCode::playerDropCircle }, playerID, pos);
 		}
 
-		void eventReceived_playerPickCircle(LocalPlayerID hostID, LocalPlayerID pickerID, const Vec2& pos)
+		void eventReceived_playerPickCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID pickerID, const Vec2& pos)
 		{
 			if (not shareGameData) return;
 			shareGameData->playerPickCircle(pickerID, pos);
@@ -274,7 +274,7 @@
 			}
 		}
 
-		void eventReceived_playerDropCircle(LocalPlayerID hostID, LocalPlayerID dropperID, const Vec2& pos)
+		void eventReceived_playerDropCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID dropperID, const Vec2& pos)
 		{
 			if (not shareGameData) return;
 			shareGameData->playerDropCircle(dropperID, pos);
@@ -284,7 +284,7 @@
 			}
 		}
 
-		void eventReceived_erasePlayer(LocalPlayerID playerID, LocalPlayerID erasePlayerID)
+		void eventReceived_erasePlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID erasePlayerID)
 		{
 			if (not shareGameData) return;
 			shareGameData->players().erase(erasePlayerID);
@@ -296,7 +296,7 @@
 			shareGameData->player(playerID).incrementCount();
 		}
 
-		void joinRoomEventAction(const LocalPlayer& newPlayer, const Array<LocalPlayerID>& playerIDs, bool isSelf) override
+		void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
 		{
 			const bool rejoin = shareGameData ? shareGameData->players().contains(newPlayer.localID) : false;
 
@@ -407,7 +407,7 @@
 						client.dropCircle(Cursor::Pos());
 					}
 
-					for (auto [i, badge] : client.shareGameData->badges() | std::views::enumerate) {
+					for (auto [i, badge] : Indexed(client.shareGameData->badges())) {
 
 						if (client.pickBadgeLocalChange and i == client.pickBadgeLocalChange->pickedBadgeIndex) {
 							continue;
@@ -435,7 +435,7 @@
 						}
 
 						Circle(data.pos(), 3).draw(data.color());
-						font(U"id:",playerID, U" count:", data.count()).draw(data.pos() + Vec2{10, 10});
+						font(U"id:", playerID, U" count:", data.count()).draw(data.pos() + Vec2{ 10, 10 });
 					}
 				}
 
@@ -452,7 +452,7 @@
 
 			if (not client.isInLobby() and not client.isInRoom()) {
 				//ローディング画面
-				size_t t = Floor(fmod(Scene::Time() / 0.1, 8));
+				size_t t = static_cast<size_t>(Floor(fmod(Scene::Time() / 0.1, 8)));
 				for (size_t i : step(8)) {
 					Vec2 n = Circular(1, i * Math::TwoPi / 8);
 					Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
@@ -479,6 +479,4 @@
 			}
 		}
 	}
-
-
 	```
