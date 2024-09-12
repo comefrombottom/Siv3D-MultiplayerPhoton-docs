@@ -4,10 +4,12 @@
 入室してきたプレイヤーには、現在の部屋の情報を教える必要があります。その役割をホストに担わせます。ホストは部屋に一人だけ割り当てられた存在で、通常は部屋を作った人に割り当てられます。ホストが部屋を抜けると別の人がホストとなり、必ずホストが一人いる状態が保たれます。ホストは部屋に人が入ってきたのを`joinRoomEventAction`で検知し、新しいプレイヤーに部屋の共有データを送信します。
 
 ??? summary "データの同期サンプル"
+
     ```cpp
     # include <Siv3D.hpp> // Siv3D v0.6.15
     # include "Multiplayer_Photon.hpp"
     # include "PHOTON_APP_ID.SECRET"
+
 
     //複数プレイヤーで共有するデータ
     class ShareGameData
@@ -45,8 +47,9 @@
     {
     public:
         MyClient()
-            : Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::No)
         {
+            init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::No);
+
             RegisterEventCallback(EventCode::sendShareGameData, &MyClient::eventReceived_sendShareGameData);
             RegisterEventCallback(EventCode::setValue, &MyClient::eventReceived_setCount);
             RegisterEventCallback(EventCode::setSwitch, &MyClient::eventReceived_setSwitch);
@@ -57,7 +60,7 @@
         //shareGameDataを変更し、他のプレイヤーも同様の変更を行うよう通知する。
 
         void setCount(int32 count) {
-            if(not shareGameData) return;
+            if (not shareGameData) return;
             shareGameData->setCount(count);
             sendEvent(MultiplayerEvent(EventCode::setValue), count);
         }
@@ -72,34 +75,38 @@
 
         //イベントを受信したらそれに応じた処理を行う
 
-        void eventReceived_sendShareGameData(LocalPlayerID playerID, const ShareGameData& data)
+        void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
         {
             shareGameData = data;
         }
 
-        void eventReceived_setCount(LocalPlayerID playerID, int32 count)
+        void eventReceived_setCount([[maybe_unused]] LocalPlayerID playerID, int32 count)
         {
             if (not shareGameData) return;
             shareGameData->setCount(count);
         }
 
-        void eventReceived_setSwitch(LocalPlayerID playerID, size_t index, bool value)
+        void eventReceived_setSwitch([[maybe_unused]] LocalPlayerID playerID, size_t index, bool value)
         {
             if (not shareGameData) return;
             shareGameData->setSwitch(index, value);
         }
-        
-        void joinRoomEventAction(const LocalPlayer& newPlayer, const Array<LocalPlayerID>& playerIDs, bool isSelf) override
+
+        void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
         {
-            //入室したら、共有データを初期化
+            //自分が部屋に入った時
             if (isSelf) {
+                shareGameData.reset();
+            }
+
+            //ホストが入室した時、つまり部屋を新規作成した時
+            if (isSelf and isHost()) {
                 shareGameData = ShareGameData();
             }
 
-
             //誰かが部屋に入って来た時、ホストはその人にデータを送る
             if (not isSelf and isHost()) {
-                sendEvent(MultiplayerEvent(EventCode::sendShareGameData, { newPlayer.localID }), *shareGameData);
+                sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
             }
         }
     };
@@ -109,7 +116,7 @@
         MyClient client;
 
         Font font(30);
-        
+
         while (System::Update())
         {
             if (client.isActive())
@@ -126,7 +133,8 @@
 
                 if (SimpleGUI::ButtonAt(U"joinRandomOrCreateRoom", Scene::Center(), 300))
                 {
-                    client.joinRandomOrCreateRoom(U"room");
+                    //適当な部屋に入るか、部屋がなければ新規作成する。空文字列を指定するとランダムな部屋名になる。
+                    client.joinRandomOrCreateRoom(U"");
                 }
             }
 
@@ -134,17 +142,12 @@
             {
                 Scene::Rect().draw(Palette::Sienna);
 
-                if (SimpleGUI::Button(U"LeaveRoom", Vec2{ 20, 20 }, 160))
-                {
-                    client.leaveRoom();
-                }
-
                 if (client.shareGameData) {
                     int32 count = client.shareGameData->count();
 
                     //カウントの値を表示
-                    RectF rect = font(count).drawAt(Scene::CenterF().moveBy(0,-50));
-                    if (SimpleGUI::ButtonAt(U"+", rect.rightCenter().movedBy(50,0)))
+                    RectF rect = font(count).drawAt(Scene::CenterF().moveBy(0, -50));
+                    if (SimpleGUI::ButtonAt(U"+", rect.rightCenter().movedBy(50, 0)))
                     {
                         //ボタンを押すと値を増やす
                         client.setCount(count + 1);
@@ -159,7 +162,7 @@
                     //スイッチの状態を表示
                     const size_t switchCount = client.shareGameData->switches().size();
                     for (auto [i, value] : Indexed(client.shareGameData->switches())) {
-                        const Vec2 pos = Scene::Center().movedBy((i - (switchCount - 1) / 2.0) * 50, 100);
+                        const Vec2 pos = Scene::CenterF().movedBy((i - (switchCount - 1) / 2.0) * 50, 100);
                         Circle circle(pos, 20);
                         if (circle.leftClicked()) {
                             //クリックするとスイッチの状態を反転
@@ -168,6 +171,12 @@
                         circle.draw(value ? Palette::Lime : Palette::Gray);
                     }
                 }
+
+                if (SimpleGUI::Button(U"LeaveRoom", Vec2{ 20, 20 }, 160))
+                {
+                    client.leaveRoom();
+                }
+
             }
         }
     }
@@ -180,6 +189,7 @@
 `ShareGameData`内に`LocalPlayerID`とプレイヤーデータの`HashTable`を作成します。`joinRoomEventAction()`、`leaveRoomEventAction()`によって`HashTable`を適切に管理します。
 
 ??? summary "プレイヤーデータの同期サンプル"
+
     ```cpp
     # include <Siv3D.hpp> // Siv3D v0.6.15
     # include "Multiplayer_Photon.hpp"
@@ -254,8 +264,9 @@
     {
     public:
         MyClient()
-            : Multiplayer_Photon(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::No)
         {
+            init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::No);
+
             RegisterEventCallback(EventCode::sendShareGameData, &MyClient::eventReceived_sendShareGameData);
             RegisterEventCallback(EventCode::setValue, &MyClient::eventReceived_setCount);
             RegisterEventCallback(EventCode::setSwitch, &MyClient::eventReceived_setSwitch);
@@ -268,7 +279,7 @@
         //shareGameDataを変更し、他のプレイヤーも同様の変更を行うよう通知する。
 
         void setCount(int32 count) {
-            if(not shareGameData) return;
+            if (not shareGameData) return;
             shareGameData->setCount(count);
             sendEvent(MultiplayerEvent(EventCode::setValue), count);
         }
@@ -289,24 +300,24 @@
 
         //イベントを受信したらそれに応じた処理を行う
 
-        void eventReceived_sendShareGameData(LocalPlayerID playerID, const ShareGameData& data)
+        void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
         {
             shareGameData = data;
         }
 
-        void eventReceived_setCount(LocalPlayerID playerID, int32 count)
+        void eventReceived_setCount([[maybe_unused]] LocalPlayerID playerID, int32 count)
         {
             if (not shareGameData) return;
             shareGameData->setCount(count);
         }
 
-        void eventReceived_setSwitch(LocalPlayerID playerID, size_t index, bool value)
+        void eventReceived_setSwitch([[maybe_unused]] LocalPlayerID playerID, size_t index, bool value)
         {
             if (not shareGameData) return;
             shareGameData->setSwitch(index, value);
         }
 
-        void eventReceived_addPlayer(LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
+        void eventReceived_addPlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
         {
             if (not shareGameData) return;
             shareGameData->players().emplace(newPlayerID, data);
@@ -317,33 +328,34 @@
             if (not shareGameData) return;
             shareGameData->player(playerID).setPos(pos);
         }
-        
-        void joinRoomEventAction(const LocalPlayer& newPlayer, const Array<LocalPlayerID>& playerIDs, bool isSelf) override
+
+        void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
         {
-            //入室したら、共有データを初期化
+            //自分が部屋に入った時
             if (isSelf) {
-                shareGameData = ShareGameData();
+                shareGameData.reset();
             }
 
+            //ホストが入室した時、つまり部屋を新規作成した時
             if (isSelf and isHost()) {
-                //自分がホストの場合、自分のプレイヤーデータを作成
+                shareGameData = ShareGameData();
                 shareGameData->players().emplace(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
             }
 
-
             //誰かが部屋に入って来た時、ホストはその人にデータを送る
             if (not isSelf and isHost()) {
-                sendEvent(MultiplayerEvent(EventCode::sendShareGameData, { newPlayer.localID }), *shareGameData);
+                sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
 
                 //新しいプレイヤーデータを作成し、他プレイヤーに送信
                 SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
                 shareGameData->players().emplace(newPlayer.localID, newPlayerData);
-                sendEvent(MultiplayerEvent(EventCode::addPlayer), newPlayer.localID, newPlayerData);
+                sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
             }
         }
 
-        void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive) override
+        void leaveRoomEventAction(LocalPlayerID playerID, [[maybe_unused]] bool isInactive) override
         {
+            if (not shareGameData) return;
             shareGameData->players().erase(playerID);
         }
     };
@@ -353,7 +365,7 @@
         MyClient client;
 
         Font font(30);
-        
+
         while (System::Update())
         {
             if (client.isActive())
@@ -370,7 +382,8 @@
 
                 if (SimpleGUI::ButtonAt(U"joinRandomOrCreateRoom", Scene::Center(), 300))
                 {
-                    client.joinRandomOrCreateRoom(U"room");
+                    //適当な部屋に入るか、部屋がなければ新規作成する。空文字列を指定するとランダムな部屋名になる。
+                    client.joinRandomOrCreateRoom(U"");
                 }
             }
 
@@ -378,17 +391,12 @@
             {
                 Scene::Rect().draw(Palette::Sienna);
 
-                if (SimpleGUI::Button(U"LeaveRoom", Vec2{ 20, 20 }, 160))
-                {
-                    client.leaveRoom();
-                }
-
                 if (client.shareGameData) {
                     int32 count = client.shareGameData->count();
 
                     //カウントの値を表示
-                    RectF rect = font(count).drawAt(Scene::CenterF().moveBy(0,-50));
-                    if (SimpleGUI::ButtonAt(U"+", rect.rightCenter().movedBy(50,0)))
+                    RectF rect = font(count).drawAt(Scene::CenterF().moveBy(0, -50));
+                    if (SimpleGUI::ButtonAt(U"+", rect.rightCenter().movedBy(50, 0)))
                     {
                         //ボタンを押すと値を増やす
                         client.setCount(count + 1);
@@ -403,7 +411,7 @@
                     //スイッチの状態を表示
                     const size_t switchCount = client.shareGameData->switches().size();
                     for (auto [i, value] : Indexed(client.shareGameData->switches())) {
-                        const Vec2 pos = Scene::Center().movedBy((i - (switchCount - 1) / 2.0) * 50, 100);
+                        const Vec2 pos = Scene::CenterF().movedBy((i - (switchCount - 1) / 2.0) * 50, 100);
                         Circle circle(pos, 20);
                         if (circle.leftClicked()) {
                             //クリックするとスイッチの状態を反転
@@ -422,19 +430,29 @@
 
                     //他プレイヤーのデータを表示
                     for (const auto& [playerID, data] : client.shareGameData->players()) {
-                        Circle(data.pos(), 20).draw(data.color());
+                        Circle(data.pos(), 3).draw(data.color());
+                        font(U"id:", playerID).draw(data.pos() + Vec2{ 10, 10 });
                     }
                 }
+
+                if (SimpleGUI::Button(U"LeaveRoom", Vec2{ 20, 20 }, 160))
+                {
+                    client.leaveRoom();
+                }
+
             }
         }
     }
 
     ```
 
+
+
 # ホストを用いた衝突解消
-Hostを介してデータ変更の競合を解消します。Host以外のプレイヤーは遅延が発生するため、見かけ上早く動いているような工夫をします。
+Hostを介してデータ変更の競合を解消します。
 
 ??? summary "ホストを用いた同期サンプル"
+
     ```cpp
     # include <Siv3D.hpp> // Siv3D v0.6.15
     # include "Multiplayer_Photon.hpp"
@@ -467,7 +485,374 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
 
         Optional<Badge> m_pickedBadge;
 
-        int32 m_count = 0;
+    public:
+        SharePlayerData() = default;
+
+        SharePlayerData(const Vec2& pos, const ColorF& color)
+            : m_pos(pos)
+            , m_color(color) {}
+
+        const Vec2& pos() const { return m_pos; }
+        const ColorF& color() const { return m_color; }
+        const Optional<Badge>& pickedBadge() const { return m_pickedBadge; }
+
+        void setPos(const Vec2& pos) { m_pos = pos; }
+        void setColor(const ColorF& color) { m_color = color; }
+
+        void setPickedBadge(const Badge& circle) { m_pickedBadge = circle; }
+        void resetPickedBadge() { m_pickedBadge.reset(); }
+
+        template <class Archive>
+        void SIV3D_SERIALIZE(Archive& archive)
+        {
+            archive(m_pos, m_color, m_pickedBadge);
+        }
+    };
+
+    //複数プレイヤーで共有するデータ
+    class ShareGameData
+    {
+        HashTable<LocalPlayerID, SharePlayerData> m_players;
+
+        Array<Badge> m_badges;
+
+    public:
+        ShareGameData() {
+            for (int i = 0; i < 10; ++i) {
+                m_badges.push_back(Badge(Circle(RandomVec2(Scene::Rect()), Random(10, 50)), RandomColor()));
+            }
+        }
+
+        auto& players() { return m_players; }
+
+        SharePlayerData& player(LocalPlayerID playerID) { return m_players[playerID]; }
+
+        const auto& badges() const { return m_badges; }
+
+        Optional<size_t> findBadge(const Vec2& pos) const
+        {
+            for (auto [i, badge] : ReverseIndexed(m_badges))
+            {
+                if (badge.circle.intersects(pos))
+                {
+                    return i;
+                }
+            }
+
+            return none;
+        }
+
+        void playerPickCircle(LocalPlayerID playerID, const Vec2& pos)
+        {
+            if (auto i = findBadge(pos))
+            {
+                auto badge = m_badges[*i];
+                m_badges.remove_at(*i);
+                player(playerID).setPickedBadge(badge.moveBy(-pos));
+            }
+        }
+
+        void playerDropCircle(LocalPlayerID playerID, const Vec2& pos)
+        {
+            if (auto badge = player(playerID).pickedBadge())
+            {
+                m_badges.push_back(badge->moveBy(pos));
+                player(playerID).resetPickedBadge();
+            }
+        }
+
+        template <class Archive>
+        void SIV3D_SERIALIZE(Archive& archive)
+        {
+            archive(m_players, m_badges);
+        }
+    };
+
+    namespace EventCode {
+        enum : uint8
+        {
+            //イベントコードは1から199までの範囲を使う
+            sendShareGameData = 1,
+            addPlayer,
+            setPlayerPos,
+            pickCircleRequestToHost,
+            dropCircleRequestToHost,
+            playerPickCircle,
+            playerDropCircle,
+            erasePlayer,
+        };
+    }
+
+    class MyClient : public Multiplayer_Photon
+    {
+    public:
+        MyClient()
+        {
+            init(std::string(SIV3D_OBFUSCATE(PHOTON_APP_ID)), U"1.0", Verbose::No);
+
+            RegisterEventCallback(EventCode::sendShareGameData, &MyClient::eventReceived_sendShareGameData);
+            RegisterEventCallback(EventCode::addPlayer, &MyClient::eventReceived_addPlayer);
+            RegisterEventCallback(EventCode::setPlayerPos, &MyClient::eventReceived_setPlayerPos);
+            RegisterEventCallback(EventCode::pickCircleRequestToHost, &MyClient::eventReceived_pickCircleRequestToHost);
+            RegisterEventCallback(EventCode::dropCircleRequestToHost, &MyClient::eventReceived_dropCircleRequestToHost);
+            RegisterEventCallback(EventCode::playerPickCircle, &MyClient::eventReceived_playerPickCircle);
+            RegisterEventCallback(EventCode::playerDropCircle, &MyClient::eventReceived_playerDropCircle);
+            RegisterEventCallback(EventCode::erasePlayer, &MyClient::eventReceived_erasePlayer);
+        }
+
+        Optional<ShareGameData> shareGameData;
+
+        //shareGameDataを変更し、他のプレイヤーも同様の変更を行うよう通知する。
+
+        void setPlayerPos(const Vec2& pos) {
+            if (not shareGameData) return;
+            shareGameData->player(getLocalPlayerID()).setPos(pos);
+            sendEvent({ EventCode::setPlayerPos }, pos);
+        }
+
+        void pickCircle(const Vec2& pos) {
+            if (not shareGameData) return;
+            if (isHost()) {
+                shareGameData->playerPickCircle(getLocalPlayerID(), pos);
+                sendEvent({ EventCode::playerPickCircle }, getLocalPlayerID(), pos);
+            }
+            else {
+                //ホストに通知
+                sendEvent({ EventCode::pickCircleRequestToHost, ReceiverOption::Host }, pos);
+            }
+        }
+
+        void dropCircle(const Vec2& pos) {
+            if (not shareGameData) return;
+            if (isHost()) {
+                shareGameData->playerDropCircle(getLocalPlayerID(), pos);
+                sendEvent({ EventCode::playerDropCircle }, getLocalPlayerID(), pos);
+            }
+            else {
+                //ホストに通知
+                sendEvent({ EventCode::dropCircleRequestToHost, ReceiverOption::Host }, pos);
+            }
+        }
+
+    private:
+
+        //イベントを受信したらそれに応じた処理を行う
+
+        void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
+        {
+            shareGameData = data;
+        }
+
+        void eventReceived_addPlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
+        {
+            if (not shareGameData) return;
+            shareGameData->players().emplace(newPlayerID, data);
+        }
+
+        void eventReceived_setPlayerPos(LocalPlayerID playerID, const Vec2& pos)
+        {
+            if (not shareGameData) return;
+            shareGameData->player(playerID).setPos(pos);
+        }
+
+        void eventReceived_pickCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
+        {
+            if (not shareGameData) return;
+            if (not isHost()) return;
+            shareGameData->playerPickCircle(playerID, pos);
+            sendEvent({ EventCode::playerPickCircle }, playerID, pos);
+        }
+
+        void eventReceived_dropCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
+        {
+            if (not shareGameData) return;
+            if (not isHost()) return;
+            shareGameData->playerDropCircle(playerID, pos);
+            sendEvent({ EventCode::playerDropCircle }, playerID, pos);
+        }
+
+        void eventReceived_playerPickCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID pickerID, const Vec2& pos)
+        {
+            if (not shareGameData) return;
+            shareGameData->playerPickCircle(pickerID, pos);
+        }
+
+        void eventReceived_playerDropCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID dropperID, const Vec2& pos)
+        {
+            if (not shareGameData) return;
+            shareGameData->playerDropCircle(dropperID, pos);
+        }
+
+        void eventReceived_erasePlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID erasePlayerID)
+        {
+            if (not shareGameData) return;
+            shareGameData->players().erase(erasePlayerID);
+        }
+
+        void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
+        {
+            //自分が部屋に入った時
+            if (isSelf) {
+                shareGameData.reset();
+            }
+
+            //ホストが入室した時、つまり部屋を新規作成した時
+            if (isSelf and isHost()) {
+                shareGameData = ShareGameData();
+                shareGameData->players().emplace(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
+            }
+
+            //誰かが部屋に入って来た時、ホストはその人にデータを送る
+            if (not isSelf and isHost()) {
+                sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
+
+                //新しいプレイヤーデータを作成し、他プレイヤーに送信
+                SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
+                shareGameData->players().emplace(newPlayer.localID, newPlayerData);
+                sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
+            }
+        }
+
+        void leaveRoomEventAction(LocalPlayerID playerID, [[maybe_unused]] bool isInactive) override
+        {
+            if (not shareGameData) return;
+
+            //誰かが部屋から退出した時、ホストはその人を削除する
+            if (isHost()) {
+
+                //バッジを持っていたらドロップさせる
+                if (auto& badge = shareGameData->player(playerID).pickedBadge()) {
+                    const Vec2& pos = shareGameData->player(playerID).pos();
+                    shareGameData->playerDropCircle(playerID, pos);
+                    sendEvent({ EventCode::playerDropCircle }, playerID, pos);
+                }
+
+                shareGameData->players().erase(playerID);
+                sendEvent({ EventCode::erasePlayer }, playerID);
+            }
+        }
+    };
+
+    void Main()
+    {
+
+        MyClient client;
+
+        Font font(20);
+
+        while (System::Update())
+        {
+            if (client.isActive())
+            {
+                client.update();
+            }
+            else {
+                client.connect(U"player", U"jp");
+            }
+
+            if (client.isInLobby())
+            {
+                Scene::Rect().draw(Palette::Steelblue);
+
+                if (SimpleGUI::ButtonAt(U"joinRandomOrCreateRoom", Scene::Center(), 300))
+                {
+                    //適当な部屋に入るか、部屋がなければ新規作成する。空文字列を指定するとランダムな部屋名になる。
+                    client.joinRandomOrCreateRoom(U"");
+                }
+            }
+
+            if (client.isInRoom())
+            {
+                Scene::Rect().draw(Palette::Sienna);
+
+                if (client.shareGameData) {
+
+                    {
+                        Vec2 prePos = client.shareGameData->player(client.getLocalPlayerID()).pos();
+                        Vec2 nextPos = Cursor::Pos();
+                        if (prePos != nextPos) {
+                            client.setPlayerPos(nextPos);
+                        }
+                    }
+
+                    if (MouseL.down()) {
+                        client.pickCircle(Cursor::Pos());
+                    }
+
+                    if (MouseL.up()) {
+                        client.dropCircle(Cursor::Pos());
+                    }
+
+                    for (auto [i, badge] : Indexed(client.shareGameData->badges())) {
+                        badge.circle.draw(badge.color);
+                    }
+
+                    //プレイヤーのデータを表示
+                    for (const auto& [playerID, data] : client.shareGameData->players()) {
+                        if (auto& badge = data.pickedBadge()) {
+                            Circle circle = badge->circle.movedBy(data.pos() - Vec2(2, 2));
+                            circle.drawShadow(Vec2(5, 5), 10, 2.0, ColorF(0.0, 0.2)).draw(badge->color);
+                        }
+
+                        Circle(data.pos(), 3).draw(data.color());
+                        font(U"id:", playerID).draw(data.pos() + Vec2{ 10, 10 });
+                    }
+                }
+
+                if (SimpleGUI::Button(U"LeaveRoom", Vec2{ 20, 20 }, 160))
+                {
+                    client.leaveRoom();
+                }
+            }
+
+            if (not client.isInLobby() and not client.isInRoom()) {
+                //ローディング画面
+                size_t t = static_cast<size_t>(Floor(fmod(Scene::Time() / 0.1, 8)));
+                for (size_t i : step(8)) {
+                    Vec2 n = Circular(1, i * Math::TwoPi / 8);
+                    Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
+                }
+            }
+        }
+    }
+
+    ```
+
+
+Host以外のプレイヤーは遅延が発生するため、見かけ上早く動いているような工夫をします。
+??? summary "ホストを用いた同期サンプル2"
+
+    ```cpp
+    # include <Siv3D.hpp> // Siv3D v0.6.15
+    # include "Multiplayer_Photon.hpp"
+    # include "PHOTON_APP_ID.SECRET"
+
+    struct Badge {
+        Circle circle;
+        ColorF color;
+
+        Badge& moveBy(const Vec2& v) {
+            circle.moveBy(v);
+            return *this;
+        }
+
+        Badge movedBy(const Vec2& v) const {
+            return Badge{ circle.movedBy(v), color };
+        }
+
+        template <class Archive>
+        void SIV3D_SERIALIZE(Archive& archive)
+        {
+            archive(circle, color);
+        }
+    };
+
+    //複数プレイヤーで共有するプレイヤーデータ
+    class SharePlayerData {
+        Vec2 m_pos = {};
+        ColorF m_color = Palette::White;
+
+        Optional<Badge> m_pickedBadge;
 
     public:
         SharePlayerData() = default;
@@ -479,7 +864,6 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
         const Vec2& pos() const { return m_pos; }
         const ColorF& color() const { return m_color; }
         const Optional<Badge>& pickedBadge() const { return m_pickedBadge; }
-        int32 count() const { return m_count; }
 
         void setPos(const Vec2& pos) { m_pos = pos; }
         void setColor(const ColorF& color) { m_color = color; }
@@ -487,12 +871,10 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
         void setPickedBadge(const Badge& circle) { m_pickedBadge = circle; }
         void resetPickedBadge() { m_pickedBadge.reset(); }
 
-        void incrementCount() { ++m_count; }
-
         template <class Archive>
         void SIV3D_SERIALIZE(Archive& archive)
         {
-            archive(m_pos, m_color, m_pickedBadge, m_count);
+            archive(m_pos, m_color, m_pickedBadge);
         }
     };
 
@@ -573,7 +955,6 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
             playerPickCircle,
             playerDropCircle,
             erasePlayer,
-            incrementCount,
         };
     }
 
@@ -592,7 +973,6 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
             RegisterEventCallback(EventCode::playerPickCircle, &MyClient::eventReceived_playerPickCircle);
             RegisterEventCallback(EventCode::playerDropCircle, &MyClient::eventReceived_playerDropCircle);
             RegisterEventCallback(EventCode::erasePlayer, &MyClient::eventReceived_erasePlayer);
-            RegisterEventCallback(EventCode::incrementCount, &MyClient::eventReceived_incrementCount);
         }
 
         Optional<ShareGameData> shareGameData;
@@ -641,12 +1021,6 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
                 //ホストに通知
                 sendEvent({ EventCode::dropCircleRequestToHost, ReceiverOption::Host }, pos);
             }
-        }
-
-        void incrementCount() {
-            if (not shareGameData) return;
-            shareGameData->player(getLocalPlayerID()).incrementCount();
-            sendEvent({ EventCode::incrementCount });
         }
 
     private:
@@ -712,24 +1086,17 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
             shareGameData->players().erase(erasePlayerID);
         }
 
-        void eventReceived_incrementCount(LocalPlayerID playerID)
-        {
-            if (not shareGameData) return;
-            shareGameData->player(playerID).incrementCount();
-        }
-
         void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
         {
-            const bool rejoin = shareGameData ? shareGameData->players().contains(newPlayer.localID) : false;
-
             //自分が入室した時
             if (isSelf) {
                 pickBadgeLocalChange.reset();
                 dropBadgeLocalChange.reset();
+                shareGameData.reset();
             }
 
-            //ホストが入室した時かつ再入室でない時、つまり部屋を新規作成した時
-            if (isSelf and isHost() and not rejoin) {
+            //ホストが入室した時、つまり部屋を新規作成した時
+            if (isSelf and isHost()) {
                 shareGameData = ShareGameData();
                 shareGameData->players().emplace(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
             }
@@ -738,22 +1105,19 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
             if (not isSelf and isHost()) {
                 sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
 
-                if (not rejoin) {
-
-                    //新しいプレイヤーデータを作成し、他プレイヤーに送信
-                    SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
-                    shareGameData->players().emplace(newPlayer.localID, newPlayerData);
-                    sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
-                }
+                //新しいプレイヤーデータを作成し、他プレイヤーに送信
+                SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
+                shareGameData->players().emplace(newPlayer.localID, newPlayerData);
+                sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
             }
         }
 
-        void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive) override
+        void leaveRoomEventAction(LocalPlayerID playerID, [[maybe_unused]] bool isInactive) override
         {
             if (not shareGameData) return;
 
-            //誰かが部屋から完全に退出した時、ホストはその人を削除する（isInactive==true なら戻ってくる可能性がある）
-            if (isHost() and not isInactive) {
+            //誰かが部屋から退出した時、ホストはその人を削除する
+            if (isHost()) {
 
                 //バッジを持っていたらドロップさせる
                 if (auto& badge = shareGameData->player(playerID).pickedBadge()) {
@@ -775,25 +1139,14 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
 
         Font font(20);
 
-        Timer sleepTimer(10s);
-
         while (System::Update())
         {
             if (client.isActive())
             {
-                //sleepTimer 作動中は update() を呼ばないようにする。
-                if (not sleepTimer.isRunning()) {
-                    client.update();
-                }
+                client.update();
             }
             else {
-
-                if (client.reconnectAndRejoin()) {
-                    Print << U"reconnectAndRejoin";
-                }
-                else {
-                    client.connect(U"player", U"jp");
-                }
+                client.connect(U"player", U"jp");
             }
 
             if (client.isInLobby())
@@ -802,8 +1155,8 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
 
                 if (SimpleGUI::ButtonAt(U"joinRandomOrCreateRoom", Scene::Center(), 300))
                 {
-                    //適当な部屋に入るか、部屋がなければ新規作成する。部屋がある限り再入室可能にし、部屋が5秒間空いたら部屋を削除する。
-                    client.joinRandomOrCreateRoom(U"", RoomCreateOption().rejoinGracePeriod(unspecified).roomDestroyGracePeriod(5s));
+                    //適当な部屋に入るか、部屋がなければ新規作成する。空文字列を指定するとランダムな部屋名になる。
+                    client.joinRandomOrCreateRoom(U"");
                 }
             }
 
@@ -857,18 +1210,13 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
                         }
 
                         Circle(data.pos(), 3).draw(data.color());
-                        font(U"id:", playerID, U" count:", data.count()).draw(data.pos() + Vec2{ 10, 10 });
+                        font(U"id:", playerID).draw(data.pos() + Vec2{ 10, 10 });
                     }
                 }
 
                 if (SimpleGUI::Button(U"LeaveRoom", Vec2{ 20, 20 }, 160))
                 {
                     client.leaveRoom();
-                }
-
-                if (SimpleGUI::Button(U"count++", Vec2{ 20, 60 }, 160))
-                {
-                    client.incrementCount();
                 }
             }
 
@@ -878,25 +1226,6 @@ Hostを介してデータ変更の競合を解消します。Host以外のプレ
                 for (size_t i : step(8)) {
                     Vec2 n = Circular(1, i * Math::TwoPi / 8);
                     Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
-                }
-            }
-
-            if (sleepTimer.isRunning()) {
-                font(U"sleepTimer:", sleepTimer).draw(Vec2(200, 5));
-            }
-
-            if (client.isActive()) {
-                if (SimpleGUI::Button(U"disconnect", Vec2{ 620, 20 }, 160))
-                {
-                    //disconnect() で切断しても reconnectAndRejoin() で再接続される。
-                    client.disconnect();
-                }
-
-                if (SimpleGUI::Button(U"sleep 10s", Vec2{ 620, 60 }, 160))
-                {
-                    //update() を10秒呼ばないようにして強制的に接続エラーを起こさせる。
-                    //10秒後、少し時間がかかることもあるが再接続される。
-                    sleepTimer.restart();
                 }
             }
         }

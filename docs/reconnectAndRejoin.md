@@ -306,6 +306,11 @@
 				dropBadgeLocalChange.reset();
 			}
 
+			//自分が初めて入室した時
+			if (isSelf and not rejoin) {
+				shareGameData.reset();
+			}
+
 			//ホストが入室した時かつ再入室でない時、つまり部屋を新規作成した時
 			if (isSelf and isHost() and not rejoin) {
 				shareGameData = ShareGameData();
@@ -348,7 +353,7 @@
 
 	void Main()
 	{
-		
+
 		MyClient client;
 
 		Font font(20);
@@ -380,7 +385,8 @@
 
 				if (SimpleGUI::ButtonAt(U"joinRandomOrCreateRoom", Scene::Center(), 300))
 				{
-					//適当な部屋に入るか、部屋がなければ新規作成する。部屋がある限り再入室可能にし、部屋が5秒間空いたら部屋を削除する。
+					//適当な部屋に入るか、部屋がなければ新規作成する。空文字列を指定するとランダムな部屋名になる。
+					//部屋がある限り再入室可能にし、部屋が5秒間空いたら部屋を削除する。
 					client.joinRandomOrCreateRoom(U"", RoomCreateOption().rejoinGracePeriod(unspecified).roomDestroyGracePeriod(5s));
 				}
 			}
