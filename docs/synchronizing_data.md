@@ -178,6 +178,15 @@
                 }
 
             }
+
+            if (not (client.isDisconnected() or client.isInLobby() or client.isInRoom())) {
+                //ローディング画面
+                int32 t = static_cast<int32>(Floor(fmod(Scene::Time() / 0.1, 8)));
+                for (int32 i : step(8)) {
+                    Vec2 n = Circular(1, i * Math::TwoPi / 8);
+                    Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
+                }
+            }
         }
     }
 
@@ -231,12 +240,22 @@
     public:
         ShareGameData() : m_switches(5, false) {}
 
-        HashTable<LocalPlayerID, SharePlayerData>& players() { return m_players; }
+        const HashTable<LocalPlayerID, SharePlayerData>& players() const { return m_players; }
 
         SharePlayerData& player(LocalPlayerID playerID) { return m_players[playerID]; }
 
         int32 count() const { return m_count; }
         const Array<bool>& switches() const { return m_switches; }
+
+        void addPlayer(LocalPlayerID playerID, const SharePlayerData& data)
+        {
+            m_players.emplace(playerID, data);
+        }
+
+        void erasePlayer(LocalPlayerID playerID)
+        {
+            m_players.erase(playerID);
+        }
 
         void setCount(int32 count) { m_count = count; }
         void setSwitch(size_t index, bool value) { m_switches[index] = value; }
@@ -303,6 +322,12 @@
         void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
         {
             shareGameData = data;
+
+            //新しいプレイヤーデータを作成し、他プレイヤーに送信
+            SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
+            auto myID = getLocalPlayerID();
+            shareGameData->addPlayer(myID, newPlayerData);
+            sendEvent({ EventCode::addPlayer }, myID, newPlayerData);
         }
 
         void eventReceived_setCount([[maybe_unused]] LocalPlayerID playerID, int32 count)
@@ -320,7 +345,7 @@
         void eventReceived_addPlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
         {
             if (not shareGameData) return;
-            shareGameData->players().emplace(newPlayerID, data);
+            shareGameData->addPlayer(newPlayerID, data);
         }
 
         void eventReceived_setPlayerPos(LocalPlayerID playerID, const Vec2& pos)
@@ -339,24 +364,19 @@
             //ホストが入室した時、つまり部屋を新規作成した時
             if (isSelf and isHost()) {
                 shareGameData = ShareGameData();
-                shareGameData->players().emplace(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
+                shareGameData->addPlayer(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
             }
 
             //誰かが部屋に入って来た時、ホストはその人にデータを送る
             if (not isSelf and isHost()) {
                 sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
-
-                //新しいプレイヤーデータを作成し、他プレイヤーに送信
-                SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
-                shareGameData->players().emplace(newPlayer.localID, newPlayerData);
-                sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
             }
         }
 
         void leaveRoomEventAction(LocalPlayerID playerID, [[maybe_unused]] bool isInactive) override
         {
             if (not shareGameData) return;
-            shareGameData->players().erase(playerID);
+            shareGameData->erasePlayer(playerID);
         }
     };
 
@@ -441,6 +461,15 @@
                 }
 
             }
+
+            if (not (client.isDisconnected() or client.isInLobby() or client.isInRoom())) {
+                //ローディング画面
+                int32 t = static_cast<int32>(Floor(fmod(Scene::Time() / 0.1, 8)));
+                for (int32 i : step(8)) {
+                    Vec2 n = Circular(1, i * Math::TwoPi / 8);
+                    Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
+                }
+            }
         }
     }
 
@@ -448,10 +477,10 @@
 
 
 
-# ホストを用いた衝突解消
-Hostを介してデータ変更の競合を解消します。
+# サーバーを介した衝突解消
+部屋にある1つのオブジェクトに対して複数のプレイヤーが同時に関与しようとする場合、各プレイヤーは同じ順番で処理を行う必要があります。`ReceiverOption::All`によって一度サーバーを介すことで、すべてのプレイヤーは同じ順番で処理を行います。
 
-??? summary "ホストを用いた同期サンプル"
+??? summary "サーバーを介した同期サンプル"
 
     ```cpp
     # include <Siv3D.hpp> // Siv3D v0.6.15
@@ -523,11 +552,21 @@ Hostを介してデータ変更の競合を解消します。
             }
         }
 
-        auto& players() { return m_players; }
+        const auto& players() const{ return m_players; }
 
         SharePlayerData& player(LocalPlayerID playerID) { return m_players[playerID]; }
 
         const auto& badges() const { return m_badges; }
+
+        void addPlayer(LocalPlayerID playerID, const SharePlayerData& data)
+        {
+            m_players.emplace(playerID, data);
+        }
+
+        void erasePlayer(LocalPlayerID playerID)
+        {
+            m_players.erase(playerID);
+        }
 
         Optional<size_t> findBadge(const Vec2& pos) const
         {
@@ -575,8 +614,6 @@ Hostを介してデータ変更の競合を解消します。
             sendShareGameData = 1,
             addPlayer,
             setPlayerPos,
-            pickCircleRequestToHost,
-            dropCircleRequestToHost,
             playerPickCircle,
             playerDropCircle,
             erasePlayer,
@@ -593,16 +630,12 @@ Hostを介してデータ変更の競合を解消します。
             RegisterEventCallback(EventCode::sendShareGameData, &MyClient::eventReceived_sendShareGameData);
             RegisterEventCallback(EventCode::addPlayer, &MyClient::eventReceived_addPlayer);
             RegisterEventCallback(EventCode::setPlayerPos, &MyClient::eventReceived_setPlayerPos);
-            RegisterEventCallback(EventCode::pickCircleRequestToHost, &MyClient::eventReceived_pickCircleRequestToHost);
-            RegisterEventCallback(EventCode::dropCircleRequestToHost, &MyClient::eventReceived_dropCircleRequestToHost);
             RegisterEventCallback(EventCode::playerPickCircle, &MyClient::eventReceived_playerPickCircle);
             RegisterEventCallback(EventCode::playerDropCircle, &MyClient::eventReceived_playerDropCircle);
             RegisterEventCallback(EventCode::erasePlayer, &MyClient::eventReceived_erasePlayer);
         }
 
         Optional<ShareGameData> shareGameData;
-
-        //shareGameDataを変更し、他のプレイヤーも同様の変更を行うよう通知する。
 
         void setPlayerPos(const Vec2& pos) {
             if (not shareGameData) return;
@@ -612,26 +645,12 @@ Hostを介してデータ変更の競合を解消します。
 
         void pickCircle(const Vec2& pos) {
             if (not shareGameData) return;
-            if (isHost()) {
-                shareGameData->playerPickCircle(getLocalPlayerID(), pos);
-                sendEvent({ EventCode::playerPickCircle }, getLocalPlayerID(), pos);
-            }
-            else {
-                //ホストに通知
-                sendEvent({ EventCode::pickCircleRequestToHost, ReceiverOption::Host }, pos);
-            }
+            sendEvent({ EventCode::playerPickCircle, ReceiverOption::All }, pos);
         }
 
         void dropCircle(const Vec2& pos) {
             if (not shareGameData) return;
-            if (isHost()) {
-                shareGameData->playerDropCircle(getLocalPlayerID(), pos);
-                sendEvent({ EventCode::playerDropCircle }, getLocalPlayerID(), pos);
-            }
-            else {
-                //ホストに通知
-                sendEvent({ EventCode::dropCircleRequestToHost, ReceiverOption::Host }, pos);
-            }
+            sendEvent({ EventCode::playerDropCircle, ReceiverOption::All }, pos);
         }
 
     private:
@@ -641,12 +660,18 @@ Hostを介してデータ変更の競合を解消します。
         void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
         {
             shareGameData = data;
+
+            //新しいプレイヤーデータを作成し、他プレイヤーに送信
+            SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
+            auto myID = getLocalPlayerID();
+            shareGameData->addPlayer(myID, newPlayerData);
+            sendEvent({ EventCode::addPlayer }, myID, newPlayerData);
         }
 
         void eventReceived_addPlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
         {
             if (not shareGameData) return;
-            shareGameData->players().emplace(newPlayerID, data);
+            shareGameData->addPlayer(newPlayerID, data);
         }
 
         void eventReceived_setPlayerPos(LocalPlayerID playerID, const Vec2& pos)
@@ -655,38 +680,22 @@ Hostを介してデータ変更の競合を解消します。
             shareGameData->player(playerID).setPos(pos);
         }
 
-        void eventReceived_pickCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
+        void eventReceived_playerPickCircle(LocalPlayerID playerID, const Vec2& pos)
         {
             if (not shareGameData) return;
-            if (not isHost()) return;
             shareGameData->playerPickCircle(playerID, pos);
-            sendEvent({ EventCode::playerPickCircle }, playerID, pos);
         }
 
-        void eventReceived_dropCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
+        void eventReceived_playerDropCircle(LocalPlayerID playerID, const Vec2& pos)
         {
             if (not shareGameData) return;
-            if (not isHost()) return;
             shareGameData->playerDropCircle(playerID, pos);
-            sendEvent({ EventCode::playerDropCircle }, playerID, pos);
-        }
-
-        void eventReceived_playerPickCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID pickerID, const Vec2& pos)
-        {
-            if (not shareGameData) return;
-            shareGameData->playerPickCircle(pickerID, pos);
-        }
-
-        void eventReceived_playerDropCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID dropperID, const Vec2& pos)
-        {
-            if (not shareGameData) return;
-            shareGameData->playerDropCircle(dropperID, pos);
         }
 
         void eventReceived_erasePlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID erasePlayerID)
         {
             if (not shareGameData) return;
-            shareGameData->players().erase(erasePlayerID);
+            shareGameData->erasePlayer(erasePlayerID);
         }
 
         void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
@@ -699,17 +708,12 @@ Hostを介してデータ変更の競合を解消します。
             //ホストが入室した時、つまり部屋を新規作成した時
             if (isSelf and isHost()) {
                 shareGameData = ShareGameData();
-                shareGameData->players().emplace(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
+                shareGameData->addPlayer(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
             }
 
             //誰かが部屋に入って来た時、ホストはその人にデータを送る
             if (not isSelf and isHost()) {
                 sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
-
-                //新しいプレイヤーデータを作成し、他プレイヤーに送信
-                SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
-                shareGameData->players().emplace(newPlayer.localID, newPlayerData);
-                sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
             }
         }
 
@@ -727,7 +731,7 @@ Hostを介してデータ変更の競合を解消します。
                     sendEvent({ EventCode::playerDropCircle }, playerID, pos);
                 }
 
-                shareGameData->players().erase(playerID);
+                shareGameData->erasePlayer(playerID);
                 sendEvent({ EventCode::erasePlayer }, playerID);
             }
         }
@@ -805,10 +809,10 @@ Hostを介してデータ変更の競合を解消します。
                 }
             }
 
-            if (not client.isInLobby() and not client.isInRoom()) {
+            if (not (client.isDisconnected() or client.isInLobby() or client.isInRoom())) {
                 //ローディング画面
-                size_t t = static_cast<size_t>(Floor(fmod(Scene::Time() / 0.1, 8)));
-                for (size_t i : step(8)) {
+                int32 t = static_cast<int32>(Floor(fmod(Scene::Time() / 0.1, 8)));
+                for (int32 i : step(8)) {
                     Vec2 n = Circular(1, i * Math::TwoPi / 8);
                     Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
                 }
@@ -816,11 +820,12 @@ Hostを介してデータ変更の競合を解消します。
         }
     }
 
+
     ```
 
 
-Host以外のプレイヤーは遅延が発生するため、見かけ上早く動いているような工夫をします。
-??? summary "ホストを用いた同期サンプル2"
+サーバーを介すと遅延が発生するため、見かけ上早く動いているような工夫をします。
+??? summary "サーバーを介した同期サンプル（遅延解消）"
 
     ```cpp
     # include <Siv3D.hpp> // Siv3D v0.6.15
@@ -892,11 +897,21 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
             }
         }
 
-        auto& players() { return m_players; }
+        const auto& players() const{ return m_players; }
 
         SharePlayerData& player(LocalPlayerID playerID) { return m_players[playerID]; }
 
         const auto& badges() const { return m_badges; }
+
+        void addPlayer(LocalPlayerID playerID, const SharePlayerData& data)
+        {
+            m_players.emplace(playerID, data);
+        }
+
+        void erasePlayer(LocalPlayerID playerID)
+        {
+            m_players.erase(playerID);
+        }
 
         Optional<size_t> findBadge(const Vec2& pos) const
         {
@@ -942,7 +957,6 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
         Badge badge;
     };
 
-
     namespace EventCode {
         enum : uint8
         {
@@ -950,8 +964,6 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
             sendShareGameData = 1,
             addPlayer,
             setPlayerPos,
-            pickCircleRequestToHost,
-            dropCircleRequestToHost,
             playerPickCircle,
             playerDropCircle,
             erasePlayer,
@@ -968,8 +980,6 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
             RegisterEventCallback(EventCode::sendShareGameData, &MyClient::eventReceived_sendShareGameData);
             RegisterEventCallback(EventCode::addPlayer, &MyClient::eventReceived_addPlayer);
             RegisterEventCallback(EventCode::setPlayerPos, &MyClient::eventReceived_setPlayerPos);
-            RegisterEventCallback(EventCode::pickCircleRequestToHost, &MyClient::eventReceived_pickCircleRequestToHost);
-            RegisterEventCallback(EventCode::dropCircleRequestToHost, &MyClient::eventReceived_dropCircleRequestToHost);
             RegisterEventCallback(EventCode::playerPickCircle, &MyClient::eventReceived_playerPickCircle);
             RegisterEventCallback(EventCode::playerDropCircle, &MyClient::eventReceived_playerDropCircle);
             RegisterEventCallback(EventCode::erasePlayer, &MyClient::eventReceived_erasePlayer);
@@ -981,9 +991,6 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
 
         Optional<Badge> dropBadgeLocalChange;
 
-
-        //shareGameDataを変更し、他のプレイヤーも同様の変更を行うよう通知する。
-
         void setPlayerPos(const Vec2& pos) {
             if (not shareGameData) return;
             shareGameData->player(getLocalPlayerID()).setPos(pos);
@@ -992,35 +999,23 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
 
         void pickCircle(const Vec2& pos) {
             if (not shareGameData) return;
-            if (isHost()) {
-                shareGameData->playerPickCircle(getLocalPlayerID(), pos);
-                sendEvent({ EventCode::playerPickCircle }, getLocalPlayerID(), pos);
-            }
-            else {
-                if (auto i = shareGameData->findBadge(pos))
-                {
-                    pickBadgeLocalChange = PickBadgeLocalChange{ *i, shareGameData->badges()[*i].movedBy(-pos) };
-                }
 
-                //ホストに通知
-                sendEvent({ EventCode::pickCircleRequestToHost, ReceiverOption::Host }, pos);
+            if (auto i = shareGameData->findBadge(pos))
+            {
+                pickBadgeLocalChange = PickBadgeLocalChange{ *i, shareGameData->badges()[*i].movedBy(-pos) };
             }
+
+            sendEvent({ EventCode::playerPickCircle, ReceiverOption::All }, pos);
         }
 
         void dropCircle(const Vec2& pos) {
             if (not shareGameData) return;
-            if (isHost()) {
-                shareGameData->playerDropCircle(getLocalPlayerID(), pos);
-                sendEvent({ EventCode::playerDropCircle }, getLocalPlayerID(), pos);
-            }
-            else {
-                if (auto badge = shareGameData->player(getLocalPlayerID()).pickedBadge()) {
-                    dropBadgeLocalChange = badge->moveBy(pos);
-                }
 
-                //ホストに通知
-                sendEvent({ EventCode::dropCircleRequestToHost, ReceiverOption::Host }, pos);
+            if (auto badge = shareGameData->player(getLocalPlayerID()).pickedBadge()) {
+                dropBadgeLocalChange = badge->moveBy(pos);
             }
+
+            sendEvent({ EventCode::playerDropCircle, ReceiverOption::All }, pos);
         }
 
     private:
@@ -1030,12 +1025,18 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
         void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
         {
             shareGameData = data;
+
+            //新しいプレイヤーデータを作成し、他プレイヤーに送信
+            SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
+            auto myID = getLocalPlayerID();
+            shareGameData->addPlayer(myID, newPlayerData);
+            sendEvent({ EventCode::addPlayer }, myID, newPlayerData);
         }
 
         void eventReceived_addPlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
         {
             if (not shareGameData) return;
-            shareGameData->players().emplace(newPlayerID, data);
+            shareGameData->addPlayer(newPlayerID, data);
         }
 
         void eventReceived_setPlayerPos(LocalPlayerID playerID, const Vec2& pos)
@@ -1044,38 +1045,22 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
             shareGameData->player(playerID).setPos(pos);
         }
 
-        void eventReceived_pickCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
+        void eventReceived_playerPickCircle(LocalPlayerID playerID, const Vec2& pos)
         {
             if (not shareGameData) return;
-            if (not isHost()) return;
             shareGameData->playerPickCircle(playerID, pos);
-            sendEvent({ EventCode::playerPickCircle }, playerID, pos);
-        }
 
-        void eventReceived_dropCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
-        {
-            if (not shareGameData) return;
-            if (not isHost()) return;
-            shareGameData->playerDropCircle(playerID, pos);
-            sendEvent({ EventCode::playerDropCircle }, playerID, pos);
-        }
-
-        void eventReceived_playerPickCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID pickerID, const Vec2& pos)
-        {
-            if (not shareGameData) return;
-            shareGameData->playerPickCircle(pickerID, pos);
-
-            if (pickerID == getLocalPlayerID()) {
+            if (playerID == getLocalPlayerID()) {
                 pickBadgeLocalChange.reset();
             }
         }
 
-        void eventReceived_playerDropCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID dropperID, const Vec2& pos)
+        void eventReceived_playerDropCircle(LocalPlayerID playerID, const Vec2& pos)
         {
             if (not shareGameData) return;
-            shareGameData->playerDropCircle(dropperID, pos);
+            shareGameData->playerDropCircle(playerID, pos);
 
-            if (dropperID == getLocalPlayerID()) {
+            if (playerID == getLocalPlayerID()) {
                 dropBadgeLocalChange.reset();
             }
         }
@@ -1083,12 +1068,12 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
         void eventReceived_erasePlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID erasePlayerID)
         {
             if (not shareGameData) return;
-            shareGameData->players().erase(erasePlayerID);
+            shareGameData->erasePlayer(erasePlayerID);
         }
 
         void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
         {
-            //自分が入室した時
+            //自分が部屋に入った時
             if (isSelf) {
                 pickBadgeLocalChange.reset();
                 dropBadgeLocalChange.reset();
@@ -1098,17 +1083,12 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
             //ホストが入室した時、つまり部屋を新規作成した時
             if (isSelf and isHost()) {
                 shareGameData = ShareGameData();
-                shareGameData->players().emplace(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
+                shareGameData->addPlayer(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
             }
 
             //誰かが部屋に入って来た時、ホストはその人にデータを送る
             if (not isSelf and isHost()) {
                 sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
-
-                //新しいプレイヤーデータを作成し、他プレイヤーに送信
-                SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
-                shareGameData->players().emplace(newPlayer.localID, newPlayerData);
-                sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
             }
         }
 
@@ -1126,7 +1106,7 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
                     sendEvent({ EventCode::playerDropCircle }, playerID, pos);
                 }
 
-                shareGameData->players().erase(playerID);
+                shareGameData->erasePlayer(playerID);
                 sendEvent({ EventCode::erasePlayer }, playerID);
             }
         }
@@ -1220,10 +1200,10 @@ Host以外のプレイヤーは遅延が発生するため、見かけ上早く�
                 }
             }
 
-            if (not client.isInLobby() and not client.isInRoom()) {
+            if (not (client.isDisconnected() or client.isInLobby() or client.isInRoom())) {
                 //ローディング画面
-                size_t t = static_cast<size_t>(Floor(fmod(Scene::Time() / 0.1, 8)));
-                for (size_t i : step(8)) {
+                int32 t = static_cast<int32>(Floor(fmod(Scene::Time() / 0.1, 8)));
+                for (int32 i : step(8)) {
                     Vec2 n = Circular(1, i * Math::TwoPi / 8);
                     Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
                 }

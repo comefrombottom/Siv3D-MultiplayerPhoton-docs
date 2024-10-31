@@ -45,8 +45,6 @@
 
 		Optional<Badge> m_pickedBadge;
 
-		int32 m_count = 0;
-
 	public:
 		SharePlayerData() = default;
 
@@ -57,7 +55,6 @@
 		const Vec2& pos() const { return m_pos; }
 		const ColorF& color() const { return m_color; }
 		const Optional<Badge>& pickedBadge() const { return m_pickedBadge; }
-		int32 count() const { return m_count; }
 
 		void setPos(const Vec2& pos) { m_pos = pos; }
 		void setColor(const ColorF& color) { m_color = color; }
@@ -65,12 +62,10 @@
 		void setPickedBadge(const Badge& circle) { m_pickedBadge = circle; }
 		void resetPickedBadge() { m_pickedBadge.reset(); }
 
-		void incrementCount() { ++m_count; }
-
 		template <class Archive>
 		void SIV3D_SERIALIZE(Archive& archive)
 		{
-			archive(m_pos, m_color, m_pickedBadge, m_count);
+			archive(m_pos, m_color, m_pickedBadge);
 		}
 	};
 
@@ -88,11 +83,21 @@
 			}
 		}
 
-		auto& players() { return m_players; }
+		const auto& players() const{ return m_players; }
 
 		SharePlayerData& player(LocalPlayerID playerID) { return m_players[playerID]; }
 
 		const auto& badges() const { return m_badges; }
+
+		void addPlayer(LocalPlayerID playerID, const SharePlayerData& data)
+		{
+			m_players.emplace(playerID, data);
+		}
+
+		void erasePlayer(LocalPlayerID playerID)
+		{
+			m_players.erase(playerID);
+		}
 
 		Optional<size_t> findBadge(const Vec2& pos) const
 		{
@@ -138,7 +143,6 @@
 		Badge badge;
 	};
 
-
 	namespace EventCode {
 		enum : uint8
 		{
@@ -146,12 +150,9 @@
 			sendShareGameData = 1,
 			addPlayer,
 			setPlayerPos,
-			pickCircleRequestToHost,
-			dropCircleRequestToHost,
 			playerPickCircle,
 			playerDropCircle,
 			erasePlayer,
-			incrementCount,
 		};
 	}
 
@@ -165,12 +166,9 @@
 			RegisterEventCallback(EventCode::sendShareGameData, &MyClient::eventReceived_sendShareGameData);
 			RegisterEventCallback(EventCode::addPlayer, &MyClient::eventReceived_addPlayer);
 			RegisterEventCallback(EventCode::setPlayerPos, &MyClient::eventReceived_setPlayerPos);
-			RegisterEventCallback(EventCode::pickCircleRequestToHost, &MyClient::eventReceived_pickCircleRequestToHost);
-			RegisterEventCallback(EventCode::dropCircleRequestToHost, &MyClient::eventReceived_dropCircleRequestToHost);
 			RegisterEventCallback(EventCode::playerPickCircle, &MyClient::eventReceived_playerPickCircle);
 			RegisterEventCallback(EventCode::playerDropCircle, &MyClient::eventReceived_playerDropCircle);
 			RegisterEventCallback(EventCode::erasePlayer, &MyClient::eventReceived_erasePlayer);
-			RegisterEventCallback(EventCode::incrementCount, &MyClient::eventReceived_incrementCount);
 		}
 
 		Optional<ShareGameData> shareGameData;
@@ -178,9 +176,6 @@
 		Optional<PickBadgeLocalChange> pickBadgeLocalChange;
 
 		Optional<Badge> dropBadgeLocalChange;
-
-
-		//shareGameDataを変更し、他のプレイヤーも同様の変更を行うよう通知する。
 
 		void setPlayerPos(const Vec2& pos) {
 			if (not shareGameData) return;
@@ -190,41 +185,23 @@
 
 		void pickCircle(const Vec2& pos) {
 			if (not shareGameData) return;
-			if (isHost()) {
-				shareGameData->playerPickCircle(getLocalPlayerID(), pos);
-				sendEvent({ EventCode::playerPickCircle }, getLocalPlayerID(), pos);
-			}
-			else {
-				if (auto i = shareGameData->findBadge(pos))
-				{
-					pickBadgeLocalChange = PickBadgeLocalChange{ *i, shareGameData->badges()[*i].movedBy(-pos) };
-				}
 
-				//ホストに通知
-				sendEvent({ EventCode::pickCircleRequestToHost, ReceiverOption::Host }, pos);
+			if (auto i = shareGameData->findBadge(pos))
+			{
+				pickBadgeLocalChange = PickBadgeLocalChange{ *i, shareGameData->badges()[*i].movedBy(-pos) };
 			}
+
+			sendEvent({ EventCode::playerPickCircle, ReceiverOption::All }, pos);
 		}
 
 		void dropCircle(const Vec2& pos) {
 			if (not shareGameData) return;
-			if (isHost()) {
-				shareGameData->playerDropCircle(getLocalPlayerID(), pos);
-				sendEvent({ EventCode::playerDropCircle }, getLocalPlayerID(), pos);
-			}
-			else {
-				if (auto badge = shareGameData->player(getLocalPlayerID()).pickedBadge()) {
-					dropBadgeLocalChange = badge->moveBy(pos);
-				}
 
-				//ホストに通知
-				sendEvent({ EventCode::dropCircleRequestToHost, ReceiverOption::Host }, pos);
+			if (auto badge = shareGameData->player(getLocalPlayerID()).pickedBadge()) {
+				dropBadgeLocalChange = badge->moveBy(pos);
 			}
-		}
 
-		void incrementCount() {
-			if (not shareGameData) return;
-			shareGameData->player(getLocalPlayerID()).incrementCount();
-			sendEvent({ EventCode::incrementCount });
+			sendEvent({ EventCode::playerDropCircle, ReceiverOption::All }, pos);
 		}
 
 	private:
@@ -234,12 +211,22 @@
 		void eventReceived_sendShareGameData([[maybe_unused]] LocalPlayerID playerID, const ShareGameData& data)
 		{
 			shareGameData = data;
+
+			const bool rejoin = data.players().contains(getLocalPlayerID());
+
+			if (not rejoin) {
+				//新しいプレイヤーデータを作成し、他プレイヤーに送信
+				SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
+				auto myID = getLocalPlayerID();
+				shareGameData->addPlayer(myID, newPlayerData);
+				sendEvent({ EventCode::addPlayer }, myID, newPlayerData);
+			}
 		}
 
 		void eventReceived_addPlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID newPlayerID, const SharePlayerData& data)
 		{
 			if (not shareGameData) return;
-			shareGameData->players().emplace(newPlayerID, data);
+			shareGameData->addPlayer(newPlayerID, data);
 		}
 
 		void eventReceived_setPlayerPos(LocalPlayerID playerID, const Vec2& pos)
@@ -248,38 +235,22 @@
 			shareGameData->player(playerID).setPos(pos);
 		}
 
-		void eventReceived_pickCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
+		void eventReceived_playerPickCircle(LocalPlayerID playerID, const Vec2& pos)
 		{
 			if (not shareGameData) return;
-			if (not isHost()) return;
 			shareGameData->playerPickCircle(playerID, pos);
-			sendEvent({ EventCode::playerPickCircle }, playerID, pos);
-		}
 
-		void eventReceived_dropCircleRequestToHost(LocalPlayerID playerID, const Vec2& pos)
-		{
-			if (not shareGameData) return;
-			if (not isHost()) return;
-			shareGameData->playerDropCircle(playerID, pos);
-			sendEvent({ EventCode::playerDropCircle }, playerID, pos);
-		}
-
-		void eventReceived_playerPickCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID pickerID, const Vec2& pos)
-		{
-			if (not shareGameData) return;
-			shareGameData->playerPickCircle(pickerID, pos);
-
-			if (pickerID == getLocalPlayerID()) {
+			if (playerID == getLocalPlayerID()) {
 				pickBadgeLocalChange.reset();
 			}
 		}
 
-		void eventReceived_playerDropCircle([[maybe_unused]] LocalPlayerID hostID, LocalPlayerID dropperID, const Vec2& pos)
+		void eventReceived_playerDropCircle(LocalPlayerID playerID, const Vec2& pos)
 		{
 			if (not shareGameData) return;
-			shareGameData->playerDropCircle(dropperID, pos);
+			shareGameData->playerDropCircle(playerID, pos);
 
-			if (dropperID == getLocalPlayerID()) {
+			if (playerID == getLocalPlayerID()) {
 				dropBadgeLocalChange.reset();
 			}
 		}
@@ -287,18 +258,12 @@
 		void eventReceived_erasePlayer([[maybe_unused]] LocalPlayerID playerID, LocalPlayerID erasePlayerID)
 		{
 			if (not shareGameData) return;
-			shareGameData->players().erase(erasePlayerID);
-		}
-
-		void eventReceived_incrementCount(LocalPlayerID playerID)
-		{
-			if (not shareGameData) return;
-			shareGameData->player(playerID).incrementCount();
+			shareGameData->erasePlayer(erasePlayerID);
 		}
 
 		void joinRoomEventAction(const LocalPlayer& newPlayer, [[maybe_unused]] const Array<LocalPlayerID>& playerIDs, bool isSelf) override
 		{
-			const bool rejoin = shareGameData ? shareGameData->players().contains(newPlayer.localID) : false;
+			const bool rejoin = shareGameData and shareGameData->players().contains(newPlayer.localID);
 
 			//自分が入室した時
 			if (isSelf) {
@@ -314,28 +279,20 @@
 			//ホストが入室した時かつ再入室でない時、つまり部屋を新規作成した時
 			if (isSelf and isHost() and not rejoin) {
 				shareGameData = ShareGameData();
-				shareGameData->players().emplace(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
+				shareGameData->addPlayer(newPlayer.localID, SharePlayerData(Scene::Center(), RandomColorF()));
 			}
 
 			//誰かが部屋に入って来た時、ホストはその人にデータを送る
 			if (not isSelf and isHost()) {
 				sendEvent({ EventCode::sendShareGameData, { newPlayer.localID } }, *shareGameData);
-
-				if (not rejoin) {
-
-					//新しいプレイヤーデータを作成し、他プレイヤーに送信
-					SharePlayerData newPlayerData(Scene::Center(), RandomColorF());
-					shareGameData->players().emplace(newPlayer.localID, newPlayerData);
-					sendEvent({ EventCode::addPlayer }, newPlayer.localID, newPlayerData);
-				}
 			}
 		}
 
-		void leaveRoomEventAction(LocalPlayerID playerID, bool isInactive) override
+		void leaveRoomEventAction(LocalPlayerID playerID, [[maybe_unused]] bool isInactive) override
 		{
 			if (not shareGameData) return;
 
-			//誰かが部屋から完全に退出した時、ホストはその人を削除する（isInactive==true なら戻ってくる可能性がある）
+			//誰かが部屋から退出した時、ホストはその人を削除する
 			if (isHost() and not isInactive) {
 
 				//バッジを持っていたらドロップさせる
@@ -345,7 +302,7 @@
 					sendEvent({ EventCode::playerDropCircle }, playerID, pos);
 				}
 
-				shareGameData->players().erase(playerID);
+				shareGameData->erasePlayer(playerID);
 				sendEvent({ EventCode::erasePlayer }, playerID);
 			}
 		}
@@ -441,25 +398,21 @@
 						}
 
 						Circle(data.pos(), 3).draw(data.color());
-						font(U"id:", playerID, U" count:", data.count()).draw(data.pos() + Vec2{ 10, 10 });
+						font(U"id:", playerID).draw(data.pos() + Vec2{ 10, 10 });
 					}
 				}
 
 				if (SimpleGUI::Button(U"LeaveRoom", Vec2{ 20, 20 }, 160))
 				{
+					//leaveRoom() で部屋から退出すると、再入室はできなくなる。※leaveRoom(true)なら再入室可能。
 					client.leaveRoom();
-				}
-
-				if (SimpleGUI::Button(U"count++", Vec2{ 20, 60 }, 160))
-				{
-					client.incrementCount();
 				}
 			}
 
-			if (not client.isInLobby() and not client.isInRoom()) {
+			if (not (client.isDisconnected() or client.isInLobby() or client.isInRoom())) {
 				//ローディング画面
-				size_t t = static_cast<size_t>(Floor(fmod(Scene::Time() / 0.1, 8)));
-				for (size_t i : step(8)) {
+				int32 t = static_cast<int32>(Floor(fmod(Scene::Time() / 0.1, 8)));
+				for (int32 i : step(8)) {
 					Vec2 n = Circular(1, i * Math::TwoPi / 8);
 					Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
 				}
@@ -485,4 +438,5 @@
 			}
 		}
 	}
+
 	```

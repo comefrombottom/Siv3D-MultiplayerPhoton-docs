@@ -242,8 +242,8 @@ private:
             }
             else {
                 //待機画面のクルクル
-                size_t t = static_cast<size_t>(Floor(fmod(Scene::Time() / 0.1, 8)));
-                for (size_t i : step(8)) {
+                int32 t = static_cast<int32>(Floor(fmod(Scene::Time() / 0.1, 8)));
+                for (int32 i : step(8)) {
                     Vec2 n = Circular(1, i * Math::TwoPi / 8);
                     Line(Scene::Center() + n * 10, Arg::direction(n * 10)).draw(LineStyle::RoundCap, 4, t == i ? ColorF(1, 0.9) : ColorF(1, 0.5));
                 }
