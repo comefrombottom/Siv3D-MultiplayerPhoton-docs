@@ -30,7 +30,8 @@ Siv3D for Web上で、Multiplayer_Photonを用いてオンラインマルチプ�
 
 ??? info "起動時にエラーが出る場合"
     起動直後に上部のステータスバーが赤色に変化し、ブラウザのコンソールに以下のようなエラーが表示されることがあります。
-    Emscriptenのリンカオプションに`-s ASYNCIFY_STACK_SIZE=24576`のように設定し、スタックサイズを増加させると解決する場合があります。
+    これは、Emscriptenのリンカオプションに`-s ASYNCIFY_STACK_SIZE=8192`のように設定し、適当にスタックサイズを増加させると解決する場合があります（デフォルトは4096）。必要なスタックサイズは、デバッグビルドとリリースビルドでも異なりますので、適宜調整してください。
+
     ```
     Uncaught RuntimeError: Aborted(RuntimeError: unreachable)
         at abort (index.js:6280:11)
